@@ -28,15 +28,15 @@ You don't run anything. Paste this file (or its URL) into **Claude Code** and sa
 > 1. **Preflight.** Confirm `git`, `node`/`npx`, and the `claude` CLI are on PATH. If any is missing, stop and tell the user to install it first.
 > 2. **Clone (idempotent):**
 >    ```bash
->    git clone https://github.com/unisol1020/claude-qa.git ~/.claude-qa 2>/dev/null \
->      || git -C ~/.claude-qa pull --ff-only
+>    git clone https://github.com/unisol1020/claude-tools.git ~/.claude-tools 2>/dev/null \
+>      || git -C ~/.claude-tools pull --ff-only
 >    ```
 > 3. **Run the installer:**
 >    ```bash
->    bash ~/.claude-qa/install.sh
+>    bash ~/.claude-tools/qa/install.sh
 >    ```
 >    It symlinks the `manual-qa` agent + `playwright-qa` and `qa-run` skills into `~/.claude/`, and registers the **Playwright MCP** at user scope (`npx @playwright/mcp@latest --headless`).
-> 4. **Verify:** `claude mcp get playwright` shows *Connected*; `ls -la ~/.claude/agents/manual-qa.md ~/.claude/skills/playwright-qa ~/.claude/skills/qa-run` are symlinks into `~/.claude-qa`.
+> 4. **Verify:** `claude mcp get playwright` shows *Connected*; `ls -la ~/.claude/agents/manual-qa.md ~/.claude/skills/playwright-qa ~/.claude/skills/qa-run` are symlinks into `~/.claude-tools/qa`.
 > 5. **Report back to the user** — confirm it's installed, then explain how it works in this simple step-by-step (paraphrase naturally, keep it short):
 >
 >    > ✅ **Installed.** Restart Claude Code once so the browser tools and the QA agent load.
@@ -54,15 +54,15 @@ You don't run anything. Paste this file (or its URL) into **Claude Code** and sa
 >    >
 >    > That's it. Try: *"QA the login flow"* or *"does the dashboard match this Figma: <link>"*.
 >
-> Update later with `git -C ~/.claude-qa pull` (symlinks pick it up). Uninstall: see the bottom of this file.
+> Update later with `git -C ~/.claude-tools pull` (symlinks pick it up). Uninstall: see the bottom of this file.
 
 Requirements: [Claude Code](https://claude.com/claude-code), Node.js (for `npx`), git. **Recommended runtime:** `cmux` (macOS) or the Claude Desktop app — a real browser/WebView for truest render. Both optional: functional QA needs only the Playwright MCP and runs in any terminal.
 
 ### Manual install (if you'd rather)
 
 ```bash
-git clone https://github.com/unisol1020/claude-qa.git ~/.claude-qa
-~/.claude-qa/install.sh
+git clone https://github.com/unisol1020/claude-tools.git ~/.claude-tools
+~/.claude-tools/qa/install.sh
 ```
 Then restart Claude Code.
 
@@ -118,5 +118,5 @@ A project can ship its own `.claude/agents/manual-qa.md` to specialize the agent
 ```bash
 rm ~/.claude/agents/manual-qa.md ~/.claude/skills/playwright-qa ~/.claude/skills/qa-run
 claude mcp remove playwright -s user
-rm -rf ~/.claude-qa
+rm -rf ~/.claude-tools
 ```
