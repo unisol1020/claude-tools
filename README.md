@@ -17,17 +17,37 @@ On the first QA run in a project it asks — once — for local-dev login creden
 | `skills/playwright-qa/` | skill | the headless-browser playbook (loop, capabilities, when-to-use vs cmux) |
 | `skills/qa-run/` | skill | orchestrator: per-project credential + DB setup (ask once, remember), then runs `manual-qa` |
 
-## Install
+## Install — just send this README to Claude Code
 
-Requires [Claude Code](https://claude.com/claude-code) and Node.js (for `npx`).
+You don't run anything. Paste this file (or its URL) into **Claude Code** and say *"install this"*. Claude does the rest.
+
+> **🤖 Claude Code — if a user sent you this README, install the toolset now. Do not ask setup questions (credentials/URLs/DB are gathered per-project on the first QA run, not at install). Steps:**
+>
+> 1. **Preflight.** Confirm `git`, `node`/`npx`, and the `claude` CLI are on PATH. If any is missing, stop and tell the user to install it first.
+> 2. **Clone (idempotent):**
+>    ```bash
+>    git clone https://github.com/unisol1020/claude-qa.git ~/.claude-qa 2>/dev/null \
+>      || git -C ~/.claude-qa pull --ff-only
+>    ```
+> 3. **Run the installer:**
+>    ```bash
+>    bash ~/.claude-qa/install.sh
+>    ```
+>    It symlinks the `manual-qa` agent + `playwright-qa` and `qa-run` skills into `~/.claude/`, and registers the **Playwright MCP** at user scope (`npx @playwright/mcp@latest --headless`).
+> 4. **Verify:** `claude mcp get playwright` shows *Connected*; `ls -la ~/.claude/agents/manual-qa.md ~/.claude/skills/playwright-qa ~/.claude/skills/qa-run` are symlinks into `~/.claude-qa`.
+> 5. **Tell the user:** *"Installed. Restart Claude Code once (MCP tools + the agent load on restart). Then in any project, ask: 'QA the login flow' or 'does this screen match the Figma'."*
+>
+> Update later with `git -C ~/.claude-qa pull` (symlinks pick it up). Uninstall: see the bottom of this file.
+
+Requirements: [Claude Code](https://claude.com/claude-code), Node.js (for `npx`), git. macOS-only `cmux` is optional (design/visual fidelity); functional QA needs only the Playwright MCP.
+
+### Manual install (if you'd rather)
 
 ```bash
-git clone git@github.com:unisol1020/claude-qa.git
-cd claude-qa
-./install.sh        # symlinks agent+skills into ~/.claude, registers the Playwright MCP (user scope)
+git clone https://github.com/unisol1020/claude-qa.git ~/.claude-qa
+~/.claude-qa/install.sh
 ```
-
-Then **restart Claude Code** (MCP tools only surface on restart). Update later with `git pull` — symlinks pick it up.
+Then restart Claude Code.
 
 ## Use it (in any project)
 
@@ -81,4 +101,5 @@ A project can ship its own `.claude/agents/manual-qa.md` to specialize the agent
 ```bash
 rm ~/.claude/agents/manual-qa.md ~/.claude/skills/playwright-qa ~/.claude/skills/qa-run
 claude mcp remove playwright -s user
+rm -rf ~/.claude-qa
 ```
