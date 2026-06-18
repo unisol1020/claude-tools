@@ -7,6 +7,15 @@ description: Create Linear or Jira tickets that read like a human wrote them —
 
 You (the **main thread**) run this skill to turn a request or a chunk of the current conversation into a clean, human-readable ticket in the project's tracker. The whole point is **no AI slop**: short, specific, scannable, written like a teammate filed it. You already have the conversation in context — mine it for the problem, the design links, and the test results; don't make the user repeat themselves.
 
+## Scope — global default, project override
+
+This is the **global** ticket skill — it works in any project **except** ones that should use their own ticket workflow instead. **Before anything else, check whether the current project owns ticket creation, and if so stand down:**
+
+- **Project ships its own ticket skill** — if the repo has a project-scoped ticket/issue-creation skill under `<root>/.claude/skills/`, or one named in its `CLAUDE.md`, defer to it. A project skill named `ticket` already overrides this one automatically; this guard also covers skills with a *different* name.
+- **Local opt-out list** — if `~/.claude/ticket-defer-repos.txt` exists, read it: one repo identifier per line (matched against `git config --get remote.origin.url` / `git remote -v`). If the current repo matches any line, **do not run this skill** — defer to that repo's own ticket workflow and tell the user you're using its standard, not this global one. The list is local and uncommitted, so private repo names never leave the machine.
+
+Everywhere else, proceed with the steps below.
+
 ## Config (per project)
 
 State lives in `<project-root>/.claude/tickets.local.json`. It holds **no secrets** (just the tracker choice + team/project mapping), so a team may commit it as `.claude/tickets.json` to share. Read both if present; `tickets.local.json` wins.
@@ -32,7 +41,7 @@ Tracker tool names are **detected live each session** (MCP names change) — nev
 
 ## Steps
 
-1. **Resolve project + config.** `root = $(git rev-parse --show-toplevel 2>/dev/null || pwd)`. Read `$root/.claude/tickets.json` then `$root/.claude/tickets.local.json` (local wins).
+1. **Resolve project + check scope.** `root = $(git rev-parse --show-toplevel 2>/dev/null || pwd)`. **First apply the scope guard above** — if this repo ships its own ticket skill or matches the local defer list, stop here and defer. Otherwise read `$root/.claude/tickets.json` then `$root/.claude/tickets.local.json` (local wins).
 
 2. **Detect the tracker** (only if `tracker` not in config):
    - List connected MCP tools (`claude mcp list`, and the deferred-tool list in this session). **Linear** = a tool whose name contains `linear` and creates issues (e.g. `…Linear__save_issue`). **Jira** = an `…Atlassian__…` or `…jira…` MCP.
