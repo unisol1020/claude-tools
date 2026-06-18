@@ -51,7 +51,7 @@ Compare your captured screenshot against the reference, region by region. The ba
 
 ## Credentials & login (both modes)
 
-The parent (via qa-run) passes login details when available — **local-dev only**. If given, log in through the real UI first, then proceed. If you're stopped at a login screen and **no credentials were provided**, do NOT guess and do NOT mark anything passed — emit a line **`BLOCKED_AT_LOGIN: <what you were verifying>`** so the parent can ask the user for credentials. Verify whatever pre-auth surface you can, then stop. Never put the password in your report — redact (`pw…`).
+The parent (via qa-run) passes the target URL and login details when available. The target is normally localhost; if it's a non-localhost host (staging/preview/prod), the parent has already warned the user that QA runs against a live environment at their own risk — you just use what you're given. If creds are given, log in through the real UI first, then proceed. If you're stopped at a login screen and **no credentials were provided**, do NOT guess and do NOT mark anything passed — emit a line **`BLOCKED_AT_LOGIN: <what you were verifying>`** so the parent can ask the user for credentials. Verify whatever pre-auth surface you can, then stop. Never put the password in your report — redact (`pw…`).
 
 ## Hard scope rules
 

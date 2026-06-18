@@ -44,7 +44,7 @@ You don't run anything. Paste this file (or its URL) into **Claude Code** and sa
 >    > 2. Tell me what to check, in plain words:
 >    >    - *Does it work?* → "check if login works", "verify checkout", "does the Save button actually save?"
 >    >    - *Does it look right?* → "does /pricing match this Figma <link>", "is the header pixel-perfect vs this screenshot?"
->    > 3. **First time in a project** I'll ask you once (and remember per project): which app + its **URL**, whether to use a **login** (or "no, never ask"), and how to verify the **DB** — via a connected MCP (e.g. Supabase), or `psql` with a read-only **DB URL** you provide (local/dev — prod only at your own risk).
+>    > 3. **First time in a project** I'll ask you once (and remember per project): which app + its **URL** (localhost by default; a non-localhost URL is used only at your own risk), whether to use a **login** (or "no, never ask"), and how to verify the **DB** — via a connected MCP (e.g. Supabase), or `psql` with a read-only **DB URL** you provide (local/dev — prod only at your own risk).
 >    > 4. I then drive a **real browser** and report **PASS / FAIL** with exactly what I saw. For *works* checks I follow the flow, click, and watch for errors. For *looks-right* checks I screenshot the page and compare it to your Figma/screenshot at a **90%+ / 1:1** bar and list every difference.
 >    > 5. For a design check, **give me a Figma link or a screenshot** of the target — if you don't, I'll ask for one.
 >    > 6. Your logins live only in a local, git-ignored file (local-dev only) — never committed, never shown back to you.
@@ -70,7 +70,7 @@ Then restart Claude Code.
    - *"QA the login flow"* · *"verify checkout works"* · *"check if the save button on /settings actually fires a request"* · *"test the dashboard on a mobile viewport"*
 3. **First run in that project**, the `qa-run` skill detects whether it's a single app or a **monorepo** (and which apps exist), then asks:
    - **Which app** is in scope (only if multiple and ambiguous).
-   - **What URL** to use for that app — pre-filled from the detected dev port. In a monorepo it remembers a URL **per app** (e.g. web-a :3000, web-b :3001, web-c :3002).
+   - **What URL** to use for that app — pre-filled from the detected dev port. In a monorepo it remembers a URL **per app** (e.g. web-a :3000, web-b :3001, web-c :3002). localhost is the default; you *can* point it at a non-localhost URL (staging/preview/prod), but it'll warn you once that QA exercises a live environment **at your own risk** before using it.
    - **Login credentials** for that app — *Provide* (local-dev only) or *Decline (never ask again)*. Remembered per app.
    - **DB verification?** If a DB MCP (Supabase, Postgres, …) is connected, it offers to read via that. If none is connected, it asks whether to **install a DB MCP**, use **`psql` with a DB URL you provide**, or *Decline (never ask again)*. The URL should be a **local or dev** database — a prod URL is only used after you accept the risk, and queries stay read-only.
 4. It then runs `manual-qa`, which drives a headless browser and reports **PASS / FAIL / PARTIAL** with evidence.
@@ -97,7 +97,7 @@ Your choices are stored in `<project>/.claude/qa.local.json` (see `templates/qa.
 ### ⚠️ Credentials & privacy
 
 - `qa.local.json` holds **local-dev credentials** → it is **gitignored** and must **never** be committed. `qa-run` adds it to your project's `.gitignore` before writing anything.
-- **Local-dev only.** Never enter staging/production credentials. The agent never types creds into a non-localhost URL and never prints passwords in reports.
+- **Local-dev by default; non-localhost is your call.** Prefer local-dev URLs and credentials. You *can* aim QA at a staging/preview/prod URL, but it's allowed only after a one-time warning that QA drives a live, possibly shared environment (forms submitted, writes triggered, real services hit) — **all risk is on you**. The agent never prints passwords in reports.
 - This repo itself contains **no secrets** — only the tooling and a placeholder template.
 
 ## Tool split

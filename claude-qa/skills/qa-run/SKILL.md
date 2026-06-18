@@ -40,11 +40,12 @@ State lives in `<project-root>/.claude/qa.local.json`. URLs and credentials are 
 5. **URL gate (per in-scope app).** For each app in scope, if its `url` isn't saved:
    - **AskUserQuestion / prompt**: "What URL should I use for **<app>**?" — pre-fill the detected port (e.g. `http://localhost:3000`). On a monorepo first-run, offer to capture URLs for **all** detected apps at once so it remembers them all. Write each into `apps[].url`.
    - Prefer a live port: confirm with `curl -sI <url>` / `lsof -i -P | grep LISTEN`. If the server's down, ask whether to start it (background it, wait for the port) — don't assume.
+   - **Non-localhost target = the user's risk.** localhost / `127.0.0.1` / `0.0.0.0` is the safe default. The user *may* point QA at any other host (staging, a deployed preview, even prod), and you should allow it — but if the URL isn't local, **warn once before using it**: QA drives a real browser against a live, possibly shared environment, so it can submit forms, trigger writes, send emails, and hit real services and rate limits. State plainly that **all risk is on the user**, proceed only on their explicit confirmation, then save the URL as given (re-warning isn't needed once it's saved). Don't refuse it — just make the risk explicit.
 
 6. **Credentials gate (per in-scope app).** For each in-scope app:
    - `credentials.status: "set"` → use them.
    - `"declined"` → proceed without login (authenticated flows can't be exercised).
-   - missing → **AskUserQuestion**: "manual-qa can log into **<app>** to verify authenticated flows. Provide local-dev credentials?" → **Provide** (then ask `loginUrl | username | password`, write `status:set`) / **Decline (don't ask again for this app)** (write `status:declined`). Local-dev creds only.
+   - missing → **AskUserQuestion**: "manual-qa can log into **<app>** to verify authenticated flows. Provide credentials?" → **Provide** (then ask `loginUrl | username | password`, write `status:set`) / **Decline (don't ask again for this app)** (write `status:declined`). Push for local-dev creds; if the app's URL is non-localhost, the same "all risk on the user" warning from the URL gate covers the creds you're about to use against that live environment.
 
 7. **DB gate (project-level).** If `db.status` is set/declined → honor it. Otherwise detect a DB MCP (`claude mcp list` → match, case-insensitive, `db|database|postgres|supabase|sql|dbhub|mysql|mongo|sqlite|mariadb|cockroach|neon|planetscale|prisma`):
    - **MCP found (e.g. Supabase)** → **AskUserQuestion** "Use **<server>** to read this project's DB during QA? Provide a read-only DB URL." → Provide (write `status:set`, `access:"mcp"`, `tool`, `url`) / Decline (`status:declined`, never ask again).
@@ -64,7 +65,8 @@ State lives in `<project-root>/.claude/qa.local.json`. URLs and credentials are 
 
 ## Rules
 
-- **Never commit credentials.** Gitignore the config before writing; login creds are local-dev only; never paste passwords into chat/reports (redact).
+- **Never commit credentials.** Gitignore the config before writing; never paste passwords into chat/reports (redact).
+- **Target URL: localhost by default, non-localhost at the user's own risk.** Default to and prefer a local URL. Any non-localhost target (staging/preview/prod) is allowed only after an explicit one-time warning that QA will exercise a live, possibly shared environment and **all risk is on the user**, plus their confirmation. Don't refuse it.
 - **DB URL: local/dev by default.** Push the user toward a local or dev DB. A prod URL is allowed only after an explicit risk warning + confirmation (record `env:"prod"`), and even then queries stay strictly read-only.
 - **Respect saved choices forever** — `declined` / `no-mcp` are standing per-app/per-project decisions; don't re-ask. The user changes their mind by editing `.claude/qa.local.json`.
 - **Ask only for what's missing.** Saved URL → don't re-ask. New app in scope with no saved URL/creds → ask just for that app.
