@@ -35,7 +35,21 @@ You don't run anything. Paste this file (or its URL) into **Claude Code** and sa
 >    ```
 >    It symlinks the `manual-qa` agent + `playwright-qa` and `qa-run` skills into `~/.claude/`, and registers the **Playwright MCP** at user scope (`npx @playwright/mcp@latest --headless`).
 > 4. **Verify:** `claude mcp get playwright` shows *Connected*; `ls -la ~/.claude/agents/manual-qa.md ~/.claude/skills/playwright-qa ~/.claude/skills/qa-run` are symlinks into `~/.claude-qa`.
-> 5. **Tell the user:** *"Installed. Restart Claude Code once (MCP tools + the agent load on restart). Then in any project, ask: 'QA the login flow' or 'does this screen match the Figma'."*
+> 5. **Report back to the user** — confirm it's installed, then explain how it works in this simple step-by-step (paraphrase naturally, keep it short):
+>
+>    > ✅ **Installed.** Restart Claude Code once so the browser tools and the QA agent load.
+>    >
+>    > **How to use it — just ask, no commands:**
+>    > 1. Start your app's dev server (so there's a URL to open).
+>    > 2. Tell me what to check, in plain words:
+>    >    - *Does it work?* → "check if login works", "verify checkout", "does the Save button actually save?"
+>    >    - *Does it look right?* → "does /pricing match this Figma <link>", "is the header pixel-perfect vs this screenshot?"
+>    > 3. **First time in a project** I'll ask you once (and remember per project): which app + its **URL**, whether to use a **login** (or "no, never ask"), and — only if you have a database tool connected — a read-only **DB URL**.
+>    > 4. I then drive a **real browser** and report **PASS / FAIL** with exactly what I saw. For *works* checks I follow the flow, click, and watch for errors. For *looks-right* checks I screenshot the page and compare it to your Figma/screenshot at a **90%+ / 1:1** bar and list every difference.
+>    > 5. For a design check, **give me a Figma link or a screenshot** of the target — if you don't, I'll ask for one.
+>    > 6. Your logins live only in a local, git-ignored file (local-dev only) — never committed, never shown back to you.
+>    >
+>    > That's it. Try: *"QA the login flow"* or *"does the dashboard match this Figma: <link>"*.
 >
 > Update later with `git -C ~/.claude-qa pull` (symlinks pick it up). Uninstall: see the bottom of this file.
 
