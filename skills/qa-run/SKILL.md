@@ -46,7 +46,7 @@ State lives in `<project-root>/.claude/qa.local.json`. URLs and credentials are 
    - `"declined"` → proceed without login (authenticated flows can't be exercised).
    - missing → **AskUserQuestion**: "manual-qa can log into **<app>** to verify authenticated flows. Provide local-dev credentials?" → **Provide** (then ask `loginUrl | username | password`, write `status:set`) / **Decline (don't ask again for this app)** (write `status:declined`). Local-dev creds only.
 
-7. **DB gate (project-level).** If `db.status` is set/declined/no-mcp → honor it. Else detect a DB MCP (`claude mcp list` → match `postgres|supabase|sql|dbhub|mysql|mongo|neon|planetscale|prisma`): none → write `no-mcp`; found → **AskUserQuestion** "Provide a read-only DB URL for this project?" → Provide (write `status:set`, `tool`, `url`) / Decline (`status:declined`, never ask again).
+7. **DB gate (project-level).** If `db.status` is set/declined/no-mcp → honor it. Else detect a DB MCP (`claude mcp list` → match, case-insensitive, `db|database|postgres|supabase|sql|dbhub|mysql|mongo|sqlite|mariadb|cockroach|neon|planetscale|prisma`): none → write `no-mcp`; found → **AskUserQuestion** "Provide a read-only DB URL for this project?" → Provide (write `status:set`, `tool`, `url`) / Decline (`status:declined`, never ask again).
 
 8. **Invoke `manual-qa`** (Agent tool), once per in-scope app, with a self-contained prompt: the **mode** (functional vs design — infer from the ask), the app's **url**, its **credentials** if `status:set` (tell it to log in via the UI first), and — for design — the Figma link found in the conversation or a request to the user for a Figma link / screenshot. State whether DB verification is available.
 
