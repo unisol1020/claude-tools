@@ -29,8 +29,12 @@
 
   "db": {
     "//status": "set = use it | declined = never ask again | no-mcp = no DB MCP connected",
+    "//access": "mcp = read via a DB MCP (e.g. Supabase) | psql = read via psql against the url below",
+    "//env": "local/dev expected. prod only if YOU accepted the risk — read-only queries regardless.",
     "status": "set",
+    "access": "mcp",
     "tool": "mcp__<server>__<readonly_sql_tool>",
-    "url": "postgres://user:pass@localhost:5432/dev"
+    "url": "postgres://user:pass@localhost:5432/dev",
+    "env": "local"
   }
 }

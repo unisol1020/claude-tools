@@ -35,9 +35,9 @@ cat <<'DONE'
 Done. Next:
   1. Restart Claude Code (MCP tools surface on restart).
   2. In any project, ask: "QA the login flow" or "verify <X> works in the browser".
-     The qa-run skill will, on first run, ask for local-dev login creds (optional) and a
-     read-only DB URL (only if a DB MCP is connected), remember your choices per project,
-     then run the manual-qa agent.
+     The qa-run skill will, on first run, ask for local-dev login creds (optional) and how to
+     verify the DB — via a connected MCP (e.g. Supabase) or psql with a read-only DB URL you
+     provide (local/dev). It remembers your choices per project, then runs the manual-qa agent.
 
 Requirements: Node.js (for npx) and Claude Code. cmux (optional, macOS) is only used for
 visual/design checks; functional QA needs only the Playwright MCP.

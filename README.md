@@ -7,7 +7,7 @@ One agent, **two modes**, picked from how you ask:
 - **Functional** — *"does it work"*: click-through flows, forms, error states, mobile/offline — via **Playwright MCP** (headless, fast, cross-platform).
 - **Design** — *"does it look right / match Figma / pixel-perfect"*: screenshots the running UI and compares it to a **Figma frame or reference screenshot** at a **≥90% / 1:1** bar, reporting every difference. To capture the UI it uses the first available of: **cmux** (macOS, truest render) → Claude Desktop browser → Chrome-connected browser → **Playwright** headless screenshot → else it tells you to enable one.
 
-On the first QA run in a project it asks — once — for local-dev login credentials and (if a DB MCP is connected) a read-only DB URL, remembers your choice per project (including "no, don't ask again"), and never nags you again.
+On the first QA run in a project it asks — once — for local-dev login credentials and a read-only DB URL (via a connected DB MCP like Supabase, or `psql` if you have no MCP), remembers your choice per project (including "no, don't ask again"), and never nags you again.
 
 ## What you get
 
@@ -44,7 +44,7 @@ You don't run anything. Paste this file (or its URL) into **Claude Code** and sa
 >    > 2. Tell me what to check, in plain words:
 >    >    - *Does it work?* → "check if login works", "verify checkout", "does the Save button actually save?"
 >    >    - *Does it look right?* → "does /pricing match this Figma <link>", "is the header pixel-perfect vs this screenshot?"
->    > 3. **First time in a project** I'll ask you once (and remember per project): which app + its **URL**, whether to use a **login** (or "no, never ask"), and — only if you have a database tool connected — a read-only **DB URL**.
+>    > 3. **First time in a project** I'll ask you once (and remember per project): which app + its **URL**, whether to use a **login** (or "no, never ask"), and how to verify the **DB** — via a connected MCP (e.g. Supabase), or `psql` with a read-only **DB URL** you provide (local/dev — prod only at your own risk).
 >    > 4. I then drive a **real browser** and report **PASS / FAIL** with exactly what I saw. For *works* checks I follow the flow, click, and watch for errors. For *looks-right* checks I screenshot the page and compare it to your Figma/screenshot at a **90%+ / 1:1** bar and list every difference.
 >    > 5. For a design check, **give me a Figma link or a screenshot** of the target — if you don't, I'll ask for one.
 >    > 6. Your logins live only in a local, git-ignored file (local-dev only) — never committed, never shown back to you.
@@ -72,7 +72,7 @@ Then restart Claude Code.
    - **Which app** is in scope (only if multiple and ambiguous).
    - **What URL** to use for that app — pre-filled from the detected dev port. In a monorepo it remembers a URL **per app** (e.g. web-a :3000, web-b :3001, web-c :3002).
    - **Login credentials** for that app — *Provide* (local-dev only) or *Decline (never ask again)*. Remembered per app.
-   - **DB verification?** Only if a DB MCP is connected: *Provide* a read-only DB URL or *Decline (never ask again)*.
+   - **DB verification?** If a DB MCP (Supabase, Postgres, …) is connected, it offers to read via that. If none is connected, it asks whether to **install a DB MCP**, use **`psql` with a DB URL you provide**, or *Decline (never ask again)*. The URL should be a **local or dev** database — a prod URL is only used after you accept the risk, and queries stay read-only.
 4. It then runs `manual-qa`, which drives a headless browser and reports **PASS / FAIL / PARTIAL** with evidence.
 
 If a check needs login but you declined credentials, manual-qa stops at the wall and **pings you** (`BLOCKED_AT_LOGIN`) instead of guessing or faking a pass.
@@ -88,7 +88,7 @@ Your choices are stored in `<project>/.claude/qa.local.json` (see `templates/qa.
       "credentials": { "status": "set", "loginUrl": "...", "username": "...", "password": "..." } },
     { "name": "web-b", "url": "http://localhost:3001", "credentials": { "status": "declined" } }
   ],
-  "db": { "status": "set|declined|no-mcp", "tool": "mcp__<server>__<readonly_sql_tool>", "url": "..." }
+  "db": { "status": "set|declined|no-mcp", "access": "mcp|psql", "tool": "mcp__<server>__<readonly_sql_tool> | psql", "url": "...", "env": "local|dev|prod" }
 }
 ```
 

@@ -19,7 +19,7 @@ State lives in `<project-root>/.claude/qa.local.json`. URLs and credentials are 
       "credentials": { "status": "set", "loginUrl": "http://localhost:3000/login", "username": "...", "password": "..." } },
     { "name": "web-b", "url": "http://localhost:3001", "credentials": { "status": "declined" } }
   ],
-  "db": { "status": "set|declined|no-mcp", "tool": "mcp__<server>__<readonly_sql_tool>", "url": "..." }
+  "db": { "status": "set|declined|no-mcp", "access": "mcp|psql", "tool": "mcp__<server>__<readonly_sql_tool> | psql", "url": "...", "env": "local|dev|prod" }
 }
 ```
 
@@ -46,19 +46,26 @@ State lives in `<project-root>/.claude/qa.local.json`. URLs and credentials are 
    - `"declined"` → proceed without login (authenticated flows can't be exercised).
    - missing → **AskUserQuestion**: "manual-qa can log into **<app>** to verify authenticated flows. Provide local-dev credentials?" → **Provide** (then ask `loginUrl | username | password`, write `status:set`) / **Decline (don't ask again for this app)** (write `status:declined`). Local-dev creds only.
 
-7. **DB gate (project-level).** If `db.status` is set/declined/no-mcp → honor it. Else detect a DB MCP (`claude mcp list` → match, case-insensitive, `db|database|postgres|supabase|sql|dbhub|mysql|mongo|sqlite|mariadb|cockroach|neon|planetscale|prisma`): none → write `no-mcp`; found → **AskUserQuestion** "Provide a read-only DB URL for this project?" → Provide (write `status:set`, `tool`, `url`) / Decline (`status:declined`, never ask again).
+7. **DB gate (project-level).** If `db.status` is set/declined → honor it. Otherwise detect a DB MCP (`claude mcp list` → match, case-insensitive, `db|database|postgres|supabase|sql|dbhub|mysql|mongo|sqlite|mariadb|cockroach|neon|planetscale|prisma`):
+   - **MCP found (e.g. Supabase)** → **AskUserQuestion** "Use **<server>** to read this project's DB during QA? Provide a read-only DB URL." → Provide (write `status:set`, `access:"mcp"`, `tool`, `url`) / Decline (`status:declined`, never ask again).
+   - **No MCP found** → **AskUserQuestion** "No DB MCP connected. How should I verify DB writes?" with options:
+     - **Install a DB MCP** (Supabase, Postgres, etc.) → point the user at the install, skip the DB step this run, leave `db` unset (or write `no-mcp`) so it re-asks once the MCP is connected.
+     - **Use `psql` with a DB URL I provide** → ask for the URL, write `status:set`, `access:"psql"`, `tool:"psql"`, `url`. All queries run read-only via `psql "<url>" -c "…"`.
+     - **Decline (don't ask again)** → `status:declined`.
+   - **The DB URL must be a local or dev database.** Say this explicitly when asking. If the user hands over a **production** URL, warn once that QA will read prod and that they're accepting the risk; proceed only on explicit confirmation, record `env:"prod"`, and never run anything but read-only queries.
 
 8. **Invoke `manual-qa`** (Agent tool), once per in-scope app, with a self-contained prompt: the **mode** (functional vs design — infer from the ask), the app's **url**, its **credentials** if `status:set` (tell it to log in via the UI first), and — for design — the Figma link found in the conversation or a request to the user for a Figma link / screenshot. State whether DB verification is available.
 
 9. **Handle a login block.** If manual-qa returns `BLOCKED_AT_LOGIN: <what>` (needed auth, none provided), **ping the user**: "manual-qa is blocked at login for **<app>** — provide credentials now? (saved to this project)". Yes → collect, store `status:set`, re-invoke. No → report what was/wasn't verifiable.
 
-10. **DB cross-check** (only if `db.status:"set"`): after manual-qa confirms a UI write, run the configured read-only SQL via the DB MCP to confirm the row changed; fold into the report. Read-only — never mutate.
+10. **DB cross-check** (only if `db.status:"set"`): after manual-qa confirms a UI write, run the configured read-only SQL — via the DB MCP (`access:"mcp"`) or `psql "<url>" -c "…"` (`access:"psql"`) — to confirm the row changed; fold into the report. Read-only — never mutate. If `env:"prod"`, double down: SELECT only.
 
 11. **Report.** Relay manual-qa's verdict (PASS/FAIL/PARTIAL) + findings/differences + anything unverified, plus the DB confirmation if run. For multiple in-scope apps, one section per app.
 
 ## Rules
 
-- **Never commit credentials.** Gitignore the config before writing; local-dev only; never prod creds; never paste passwords into chat/reports (redact).
+- **Never commit credentials.** Gitignore the config before writing; login creds are local-dev only; never paste passwords into chat/reports (redact).
+- **DB URL: local/dev by default.** Push the user toward a local or dev DB. A prod URL is allowed only after an explicit risk warning + confirmation (record `env:"prod"`), and even then queries stay strictly read-only.
 - **Respect saved choices forever** — `declined` / `no-mcp` are standing per-app/per-project decisions; don't re-ask. The user changes their mind by editing `.claude/qa.local.json`.
 - **Ask only for what's missing.** Saved URL → don't re-ask. New app in scope with no saved URL/creds → ask just for that app.
 - **You ask; the agent acts.** All AskUserQuestion prompts happen here in the main thread.
