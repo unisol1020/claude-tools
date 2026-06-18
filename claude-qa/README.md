@@ -9,6 +9,8 @@ One agent, **two modes**, picked from how you ask:
 
 On the first QA run in a project it asks — once — for local-dev login credentials and a read-only DB URL (via a connected DB MCP like Supabase, or `psql` if you have no MCP), remembers your choice per project (including "no, don't ask again"), and never nags you again.
 
+> **💡 Recommended: run it inside `cmux` (macOS native terminal app) or the Claude Desktop app.** Both give a real browser / WebView, so the agent can open and screenshot the live UI at the truest fidelity — best for design / "does it look right" checks. A plain terminal works too: functional QA falls back to headless Playwright everywhere.
+
 ## What you get
 
 | Piece | Type | Role |
@@ -48,12 +50,13 @@ You don't run anything. Paste this file (or its URL) into **Claude Code** and sa
 >    > 4. I then drive a **real browser** and report **PASS / FAIL** with exactly what I saw. For *works* checks I follow the flow, click, and watch for errors. For *looks-right* checks I screenshot the page and compare it to your Figma/screenshot at a **90%+ / 1:1** bar and list every difference.
 >    > 5. For a design check, **give me a Figma link or a screenshot** of the target — if you don't, I'll ask for one.
 >    > 6. Your logins live only in a local, git-ignored file (local-dev only) — never committed, never shown back to you.
+>    > 7. 💡 For the best experience run me inside **cmux** (macOS) or the **Claude Desktop** app — both give a real browser/WebView so I see and screenshot the live UI at truest fidelity (great for design checks). A plain terminal is fine too; functional checks fall back to headless Playwright.
 >    >
 >    > That's it. Try: *"QA the login flow"* or *"does the dashboard match this Figma: <link>"*.
 >
 > Update later with `git -C ~/.claude-qa pull` (symlinks pick it up). Uninstall: see the bottom of this file.
 
-Requirements: [Claude Code](https://claude.com/claude-code), Node.js (for `npx`), git. macOS-only `cmux` is optional (design/visual fidelity); functional QA needs only the Playwright MCP.
+Requirements: [Claude Code](https://claude.com/claude-code), Node.js (for `npx`), git. **Recommended runtime:** `cmux` (macOS) or the Claude Desktop app — a real browser/WebView for truest render. Both optional: functional QA needs only the Playwright MCP and runs in any terminal.
 
 ### Manual install (if you'd rather)
 
