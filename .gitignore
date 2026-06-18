@@ -1,0 +1,4 @@
+.DS_Store
+# never commit real per-project QA config (it holds local-dev credentials)
+qa.local.json
+*.local.json

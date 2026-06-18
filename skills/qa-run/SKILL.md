@@ -1,0 +1,65 @@
+---
+name: qa-run
+description: Orchestrate a manual-QA pass (functional or design) on the running app in ANY project. Detects whether the project is a single app or a monorepo, remembers a dev URL and login credentials PER APP, plus an optional read-only DB, asking only for what isn't saved yet (and remembering "declined" so it never re-asks). Then scopes the run to the app(s) being tested and invokes the manual-qa agent. Use when the user asks to "QA this", "verify the app works", "test the flow", "check if X works / looks right in the browser", or invokes /qa-run. Runs in the MAIN thread (it needs to ask the user questions); it sets up context, then delegates the click-through to the manual-qa subagent.
+---
+
+# qa-run — per-project QA orchestrator
+
+You (the **main thread**) run this skill to QA a running web app. The manual-qa subagent cannot prompt the user, so YOU gather per-project setup here, persist it, then spawn `manual-qa` with the resolved context. Re-run any time — saved answers are skipped.
+
+## Config file (per project, gitignored)
+
+State lives in `<project-root>/.claude/qa.local.json`. URLs and credentials are **per app** (a monorepo has several); the DB is project-level.
+
+```json
+{
+  "version": 1,
+  "apps": [
+    { "name": "web-a", "url": "http://localhost:3000",
+      "credentials": { "status": "set", "loginUrl": "http://localhost:3000/login", "username": "...", "password": "..." } },
+    { "name": "web-b", "url": "http://localhost:3001", "credentials": { "status": "declined" } }
+  ],
+  "db": { "status": "set|declined|no-mcp", "tool": "mcp__<server>__<readonly_sql_tool>", "url": "..." }
+}
+```
+
+`status` is the memory: `set` = use it · `declined` = user said no, **never ask again** · `no-mcp` = no DB MCP connected. Missing entry/field = ask. A single-app project just has one entry in `apps`.
+
+## Steps
+
+1. **Resolve project + config.** `root = $(git rev-parse --show-toplevel 2>/dev/null || pwd)`. Config = `$root/.claude/qa.local.json` (`Read` if present).
+
+2. **Gitignore safety FIRST (before writing any secret).** Ensure `/.claude/qa.local.json` is in `$root/.gitignore`; append it if missing. This file holds local-dev credentials — never commit it. If you can't guarantee it's ignored, don't write creds; ask the user to use an env var instead.
+
+3. **Detect project shape (only matters on first setup).** Monorepo if any of: root `package.json` has `workspaces`, or there's `pnpm-workspace.yaml` / `turbo.json` / `nx.json`, or multiple `apps/*/package.json`. Collect candidate apps from `apps/*` (and `packages/*` if they're runnable) and guess each dev URL from its `package.json` dev script (`--port`) or framework default. Otherwise it's a single app (name = repo dir).
+
+4. **Scope this run.** Decide which app(s) this QA/design pass targets:
+   - From the user's ask ("test **web-a** login", "check **web-b**") or from `git diff --name-only` (which `apps/*` changed).
+   - If still ambiguous and there are multiple apps → **AskUserQuestion**: "Which app is in scope for this run?" (list detected apps + "all").
+
+5. **URL gate (per in-scope app).** For each app in scope, if its `url` isn't saved:
+   - **AskUserQuestion / prompt**: "What URL should I use for **<app>**?" — pre-fill the detected port (e.g. `http://localhost:3000`). On a monorepo first-run, offer to capture URLs for **all** detected apps at once so it remembers them all. Write each into `apps[].url`.
+   - Prefer a live port: confirm with `curl -sI <url>` / `lsof -i -P | grep LISTEN`. If the server's down, ask whether to start it (background it, wait for the port) — don't assume.
+
+6. **Credentials gate (per in-scope app).** For each in-scope app:
+   - `credentials.status: "set"` → use them.
+   - `"declined"` → proceed without login (authenticated flows can't be exercised).
+   - missing → **AskUserQuestion**: "manual-qa can log into **<app>** to verify authenticated flows. Provide local-dev credentials?" → **Provide** (then ask `loginUrl | username | password`, write `status:set`) / **Decline (don't ask again for this app)** (write `status:declined`). Local-dev creds only.
+
+7. **DB gate (project-level).** If `db.status` is set/declined/no-mcp → honor it. Else detect a DB MCP (`claude mcp list` → match `postgres|supabase|sql|dbhub|mysql|mongo|neon|planetscale|prisma`): none → write `no-mcp`; found → **AskUserQuestion** "Provide a read-only DB URL for this project?" → Provide (write `status:set`, `tool`, `url`) / Decline (`status:declined`, never ask again).
+
+8. **Invoke `manual-qa`** (Agent tool), once per in-scope app, with a self-contained prompt: the **mode** (functional vs design — infer from the ask), the app's **url**, its **credentials** if `status:set` (tell it to log in via the UI first), and — for design — the Figma link found in the conversation or a request to the user for a Figma link / screenshot. State whether DB verification is available.
+
+9. **Handle a login block.** If manual-qa returns `BLOCKED_AT_LOGIN: <what>` (needed auth, none provided), **ping the user**: "manual-qa is blocked at login for **<app>** — provide credentials now? (saved to this project)". Yes → collect, store `status:set`, re-invoke. No → report what was/wasn't verifiable.
+
+10. **DB cross-check** (only if `db.status:"set"`): after manual-qa confirms a UI write, run the configured read-only SQL via the DB MCP to confirm the row changed; fold into the report. Read-only — never mutate.
+
+11. **Report.** Relay manual-qa's verdict (PASS/FAIL/PARTIAL) + findings/differences + anything unverified, plus the DB confirmation if run. For multiple in-scope apps, one section per app.
+
+## Rules
+
+- **Never commit credentials.** Gitignore the config before writing; local-dev only; never prod creds; never paste passwords into chat/reports (redact).
+- **Respect saved choices forever** — `declined` / `no-mcp` are standing per-app/per-project decisions; don't re-ask. The user changes their mind by editing `.claude/qa.local.json`.
+- **Ask only for what's missing.** Saved URL → don't re-ask. New app in scope with no saved URL/creds → ask just for that app.
+- **You ask; the agent acts.** All AskUserQuestion prompts happen here in the main thread.
+- A project may ship its own `.claude/agents/manual-qa.md` to override the global agent — that's expected.
