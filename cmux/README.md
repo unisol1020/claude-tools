@@ -19,6 +19,7 @@ My full [cmux](https://cmux.com) workspace, captured so it can be reinstalled or
 | `config/cmux.json` | `~/.config/cmux/cmux.json` | cmux app behavior (editor routing, sidebar, browser link handling, minimal mode) |
 | `config/ghostty-config` | `~/.config/ghostty/config` | terminal rendering — **colors, theme, opacity, blur, font, cursor** |
 | `config/open-in-micro.sh` | `~/.config/cmux/open-in-micro.sh` | `preferredEditor` wrapper — routes file-opens into a persistent `fresh` session |
+| `config/fresh/catppuccin-mocha.json` + `config/fresh/config.snippet.json` | `~/.config/fresh/themes/` + merged into `~/.config/fresh/config.json` | `fresh` editor theme — **Catppuccin Mocha + terminal background**, so the editor matches the glass terminal |
 | `config/statusline.sh` | `~/.claude/statusline.sh` | the Claude Code statusline (segments + colors) |
 | `config/claude-settings.snippet.json` | merged into `~/.claude/settings.json` | statusLine / theme / tui / effort / model |
 | `bin/db-tui.sh` | `~/.local/bin/db-tui` | open a terminal SQL client in a right-side cmux split |
@@ -108,6 +109,10 @@ cmux calls this wrapper whenever you open a readable file (Cmd-click a terminal 
 
 - **images / PDF / audio / video** → cmux's built-in preview, split to the right.
 - **text / code** → the [`fresh`](https://sinelaw.github.io/fresh/) TUI editor ([source](https://github.com/sinelaw/fresh)), in **one persistent session + pane per workspace**. The first open boots `fresh -a ws-<id>`; every later open routes the file into that already-running editor (`fresh --cmd session open-file`) — **no new tab, no shell boot, no flicker.** The pane UUID is remembered in `~/.config/cmux/fresh-pane-<ws>.id`; if it died, the wrapper respawns it. `fresh` launches at the **git repo root** so the workspace context stays put across a monorepo.
+
+  Opens are **serialized per workspace** with an atomic `mkdir` lock (`~/.config/cmux/open-lock-<ws>.d`): two files opened at once (Claude mentioning several, a fast double-click) no longer each spawn their own surface — the second waits and routes into the session the first created.
+
+**Theme:** the editor is set to **Catppuccin Mocha** with `editor.use_terminal_bg` on, so its background is the terminal's (the glass shows through) and its colors match cmux's dark theme. The installer ships the theme file and **deep-merges** just `theme` + `use_terminal_bg` into `~/.config/fresh/config.json` — your LSP, formatters, and other `fresh` settings are left untouched.
 
 Install the editor: `brew install fresh-editor`. To use a different editor, point `app.preferredEditor` at it directly (e.g. `"zed"`, `"nvim"`) or edit `EDITOR_BIN` in the wrapper.
 

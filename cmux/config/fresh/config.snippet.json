@@ -1,0 +1,7 @@
+{
+  "//": "Deep-merged into ~/.config/fresh/config.json by install.sh so the `fresh` editor matches the cmux/Ghostty glass terminal. Only these keys are set; your LSP, formatters, and other fresh settings are preserved. theme = Catppuccin Mocha (cmux's dark theme); use_terminal_bg lets the terminal's transparent background show through (the glass look) instead of fresh painting a solid bg.",
+  "theme": "catppuccin-mocha",
+  "editor": {
+    "use_terminal_bg": true
+  }
+}

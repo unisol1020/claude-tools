@@ -20,8 +20,32 @@ PY="/usr/bin/python3"
 SED="/usr/bin/sed"
 AWK="/usr/bin/awk"
 DATE="/bin/date"
+SLEEP="/bin/sleep"
+STAT="/usr/bin/stat"
 STATE_DIR="$HOME/.config/cmux"
 LOG="$STATE_DIR/open-wrapper.log"
+
+# Serialize opens within one workspace. Without this, two near-simultaneous opens
+# (Claude mentioning several files, a quick double Cmd-click) each read "no editor yet"
+# and each spawn their OWN surface — the reported "2 files land in different surfaces".
+# Under the lock the 2nd open waits, then sees the session+pane the 1st created and
+# routes the file in. Atomic mkdir (no flock on macOS). A lock older than 15s is stolen
+# (crashed run); after ~5s we proceed unlocked rather than stall an interactive open.
+LOCK_HELD=""
+# Top-level trap (NOT inside the function): zsh fires an EXIT trap set inside a function
+# when that function returns, which would drop the lock before the critical section.
+trap 'rm -rf "$LOCK_HELD" 2>/dev/null' EXIT INT TERM
+acquire_lock() {
+  local lock="$STATE_DIR/open-lock-$1.d" waited=0 age
+  while ! mkdir "$lock" 2>/dev/null; do
+    age=$(( $("$DATE" +%s) - $("$STAT" -f %m "$lock" 2>/dev/null || echo 0) ))
+    if [ "$age" -gt 15 ]; then rm -rf "$lock" 2>/dev/null; continue; fi
+    [ "$waited" -ge 50 ] && return 0
+    "$SLEEP" 0.1 2>/dev/null || true
+    waited=$((waited + 1))
+  done
+  LOCK_HELD="$lock"
+}
 
 file="$1"
 [ -z "$file" ] && exit 1
@@ -56,6 +80,15 @@ tree=$("$CMUX" tree --json --id-format uuids 2>/dev/null)
 active_ws=""
 if [ -x "$PY" ] && [ -n "$tree" ]; then
   active_ws=$(printf '%s' "$tree" | "$PY" -c 'import sys,json;print(json.load(sys.stdin).get("active",{}).get("workspace_id",""))')
+fi
+
+# Hold the per-workspace lock across the read-state-then-spawn decision below, and
+# re-read the tree after acquiring it: a concurrent open may have created the editor
+# while we waited, in which case the recomputed reuse_pane/session_alive take the
+# flicker-free fast path instead of spawning a second surface.
+if [ -n "$active_ws" ]; then
+  acquire_lock "$active_ws"
+  tree=$("$CMUX" tree --json --id-format uuids 2>/dev/null)
 fi
 
 session=""

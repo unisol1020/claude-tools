@@ -34,6 +34,27 @@ backup "$HOME/.config/cmux/open-in-micro.sh"
 cp "$DIR/config/open-in-micro.sh" "$HOME/.config/cmux/open-in-micro.sh"
 chmod +x "$HOME/.config/cmux/open-in-micro.sh"; echo "  wrote ~/.config/cmux/open-in-micro.sh"
 
+# 2b. fresh editor theme — make the editor match the glass terminal (Catppuccin Mocha +
+#     terminal background). The theme file is copied in; the snippet is DEEP-MERGED so your
+#     existing LSP / formatter / language config in fresh's config.json is preserved.
+mkdir -p "$HOME/.config/fresh/themes"
+backup "$HOME/.config/fresh/themes/catppuccin-mocha.json"
+cp "$DIR/config/fresh/catppuccin-mocha.json" "$HOME/.config/fresh/themes/catppuccin-mocha.json"
+echo "  wrote ~/.config/fresh/themes/catppuccin-mocha.json"
+if command -v jq >/dev/null 2>&1; then
+  fresh_snip="$(jq 'del(."//")' "$DIR/config/fresh/config.snippet.json")"
+  backup "$HOME/.config/fresh/config.json"
+  if [ -f "$HOME/.config/fresh/config.json" ]; then
+    printf '%s' "$fresh_snip" | jq -s '.[0] * .[1]' "$HOME/.config/fresh/config.json" /dev/stdin > "$HOME/.config/fresh/config.json.tmp" \
+      && mv "$HOME/.config/fresh/config.json.tmp" "$HOME/.config/fresh/config.json"
+  else
+    printf '%s\n' "$fresh_snip" > "$HOME/.config/fresh/config.json"
+  fi
+  echo "  merged theme/use_terminal_bg into ~/.config/fresh/config.json"
+else
+  echo "  WARN: jq not found — skipped fresh theme merge. Set \"theme\":\"catppuccin-mocha\" in ~/.config/fresh/config.json manually."
+fi
+
 # 3. Ghostty terminal rendering (colors / theme / opacity / blur / font)
 backup "$HOME/.config/ghostty/config"
 cp "$DIR/config/ghostty-config" "$HOME/.config/ghostty/config"; echo "  wrote ~/.config/ghostty/config"
