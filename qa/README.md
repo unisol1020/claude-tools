@@ -4,7 +4,7 @@ Shareable QA toolset for **Claude Code** — a global `manual-qa` agent that dri
 
 One agent, **two modes**, picked from how you ask:
 
-- **Functional** — *"does it work"*: click-through flows, forms, error states, mobile/offline — via **Playwright MCP** (headless, fast, cross-platform).
+- **Functional** — *"does it work"*: thinks like a **senior QA first** — plans a charter across the **success path, error path, and the edge cases a real user will actually hit** (weird input, double-submit, back/refresh mid-flow, expired session, empty/overflowing data, slow/offline, …) — then click-through flows, forms, error states, mobile/offline via **Playwright MCP** (headless, fast, cross-platform).
 - **Design** — *"does it look right / match Figma / pixel-perfect"*: screenshots the running UI and compares it to a **Figma frame or reference screenshot** at a **≥90% / 1:1** bar, reporting every difference. To capture the UI it uses the first available of: **cmux** (macOS, truest render) → Claude Desktop browser → Chrome-connected browser → **Playwright** headless screenshot → else it tells you to enable one.
 
 On the first QA run in a project it asks — once — for local-dev login credentials and a read-only DB URL (via a connected DB MCP like Supabase, or `psql` if you have no MCP), remembers your choice per project (including "no, don't ask again"), and never nags you again.
