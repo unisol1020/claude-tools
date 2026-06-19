@@ -11,7 +11,7 @@ Run this to take a repo (and a fresh machine) from nothing to fully set up for t
 
 - **ripgrep** (`rg`) — fast search.
 - **CodeGraph** — the `@colbymchenry/codegraph` CLI + its MCP server in Claude Code, then a built index of this repo.
-- **graphify** — the `graphifyy` package + the `/graphify` skill.
+- **graphify** — the `graphifyy` package + the `/graphify` skill, plus an optional **per-commit auto-sync** that keeps the graph fresh with zero tokens.
 - **caveman** — the caveman Claude Code plugin (compressed mode + statusline badge).
 
 Only what's missing is installed; re-running is safe.
@@ -32,11 +32,17 @@ Only what's missing is installed; re-running is safe.
 
 4. **Build the graphify knowledge graph (optional, heavy).** Offer to run `/graphify` on the repo — a heavier pipeline (extraction, clustering, may download models). **Ask before running**; run on confirm, skip otherwise. Never kick it off silently.
 
-5. **Augment CLAUDE.md.** Create or update `$root/CLAUDE.md` with a short note that CodeGraph is indexed and should be reached for before grep/find on code questions (mirror the user's global convention), plus the detected stack. Don't duplicate a note that's already there.
+5. **Install the graphify per-commit auto-sync (only if a graph was built).** Skip if `$root/graphify-out/graph.json` doesn't exist. This adds a Claude Code `PostToolUse` hook that, after every `git commit`, runs a silent, **zero-token** AST pass refreshing `graph.json` from the commit's changed code files — the model is never involved, and generated/native/vendor dirs (`node_modules`, `ios`, `android`, `Pods`, `dist`, `build`, …) are excluded by path segment. It writes to the repo's gitignored `.claude/` (personal, per-dev — never imposed on teammates via shared git/Husky hooks). **Ask before enabling** (it reacts to your commits), then on confirm:
+   ```bash
+   bash ~/.claude/skills/bootstrap/install-graphify-sync.sh "$root"
+   ```
+   Idempotent — re-running won't duplicate the hook. The hook only takes effect after a **Claude Code restart** (note it for the end). Tell the user: code changes stay fresh automatically and free; **doc/README/spec changes still need a manual `/graphify --update`** (those are the only token-costing files). If the installer warns that `.claude/` isn't gitignored, relay it.
 
-6. **Record completion.** Append `root` as a new line to `~/.claude/.bootstrapped-projects` (create the file if missing; no duplicates). This stops the session-start nudge for this repo.
+6. **Augment CLAUDE.md.** Create or update `$root/CLAUDE.md` with a short note that CodeGraph is indexed and should be reached for before grep/find on code questions (mirror the user's global convention), plus the detected stack. Don't duplicate a note that's already there.
 
-7. **Report.** What was installed, whether the index built, whether graphify ran, and: **restart Claude Code once** so the caveman plugin + CodeGraph MCP load.
+7. **Record completion.** Append `root` as a new line to `~/.claude/.bootstrapped-projects` (create the file if missing; no duplicates). This stops the session-start nudge for this repo.
+
+8. **Report.** What was installed, whether the index built, whether graphify ran, whether the per-commit auto-sync was enabled, and: **restart Claude Code once** so the caveman plugin + CodeGraph MCP load.
 
 ## Rules
 

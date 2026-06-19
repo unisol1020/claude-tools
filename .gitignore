@@ -2,3 +2,6 @@
 # never commit real per-project QA config (it holds local-dev credentials)
 qa.local.json
 *.local.json
+# python build artifacts (e.g. bootstrap graphify-sync template)
+__pycache__/
+*.pyc
