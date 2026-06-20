@@ -45,10 +45,12 @@ else
     || note "… graphify CLI not on PATH after install — reopen your shell, then re-run, or: npm i -g graphifyy"
 fi
 # Install the graphify skill into Claude Code.
+# NB: 'graphify install claude' copies the SKILL.md into ~/.claude/skills (gives the
+# /graphify command). 'graphify claude install' only writes a CLAUDE.md section — no skill.
 if [ -f "$CLAUDE_DIR/skills/graphify/SKILL.md" ]; then note "✓ graphify skill already installed"
 elif have graphify; then
-  graphify claude install >/dev/null 2>&1 && note "✓ graphify skill installed" \
-    || note "… run 'graphify claude install' manually"
+  graphify install claude >/dev/null 2>&1 && note "✓ graphify skill installed (/graphify available after restart)" \
+    || note "… run 'graphify install claude' manually"
 fi
 
 # 4. ponytail plugin (merge marketplace + enable into settings.json) ---------
