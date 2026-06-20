@@ -5,9 +5,9 @@ My full [cmux](https://cmux.com) workspace, captured so it can be reinstalled or
 ## What it looks like
 
 - **Terminal:** Ghostty rendering inside cmux — `Catppuccin Mocha` (dark) / `Latte` (light), auto-switching with macOS appearance, **92% opacity + 20px background blur** (the modern glass look), `JetBrainsMono Nerd Font` 14, roomy padding, a bar cursor that doesn't blink.
-- **Statusline** (bottom of Claude Code) — colored segments split by gray `|`:
-  ` dir   branch  ⇡ahead ⇣behind  ±files +adds -dels  context%  model 1M  ⬡ codegraph  [PONYTAIL]`
-  Catppuccin Mocha colors with thin `` dividers. Context % is green→peach→red as it fills; the `1M` badge marks a 1M-context model; `⬡` shows the CodeGraph index state; `[PONYTAIL]` is a static trailing badge.
+- **Statusline** (bottom of Claude Code) — colored segments split by `·` dividers:
+  `dir · ⎇ branch · ⇡ahead ⇣behind · ±files +adds -dels · context% · model 1M · ⬡ codegraph · [PONYTAIL]`
+  Catppuccin Mocha colors with `·` dividers. Context % is green→peach→red as it fills; the `1M` badge marks a 1M-context model; `⬡` shows the CodeGraph index state; `[PONYTAIL]` is a static trailing badge.
 - **Sidebar:** matches the terminal background, shows live log + progress.
 - **Files** open in the `fresh` TUI editor in one persistent pane per workspace (no flicker, no new tabs); images/PDFs open in cmux's preview split.
 - **New workspace** boots straight into `claude`.
@@ -118,11 +118,11 @@ Install the editor: `brew install fresh-editor`. To use a different editor, poin
 
 ### 4. The statusline — `~/.claude/statusline.sh`
 
-A bash script Claude Code runs to render the bottom bar (wired up via `statusLine` in settings), styled to the **Catppuccin Mocha** palette with thin `` dividers. Segments, in order: ** dir**, ** branch**, **⇡ahead ⇣behind** vs upstream, **±files +adds -dels** (or **✓ clean**), **context %** (parsed from the live transcript; green <50%, peach 50–80%, red ≥80%), **model** (+ Mauve `1M` badge for 1M-context models), **⬡ CodeGraph index** state (`✓` ok / `⚠` stale / `reindex` / `—` none), and the trailing **`[PONYTAIL]`** badge.
+A bash script Claude Code runs to render the bottom bar (wired up via `statusLine` in settings), styled to the **Catppuccin Mocha** palette with `·` dividers. Segments, in order: **dir**, **⎇ branch**, **⇡ahead ⇣behind** vs upstream, **±files +adds -dels** (or **✓ clean**), **context %** (parsed from the live transcript; green <50%, peach 50–80%, red ≥80%), **model** (+ Mauve `1M` badge for 1M-context models), **⬡ CodeGraph index** state (`✓` ok / `⚠` stale / `reindex` / `—` none), and the trailing **`[PONYTAIL]`** badge.
 
 - **Recolor:** the `C_*` variables near the top are ANSI-256 codes (`\033[38;5;<n>m`). Change a number, save — it's live on the next render.
 - **Add/remove a segment:** each pushes onto the `segs` array; delete a block to drop it. The CodeGraph block no-ops cleanly when codegraph isn't installed.
-- The **`[PONYTAIL]` badge** is a static trailing label rendered by the statusline itself — no plugin needed. Recolor it via `C_PONY`, or delete the `out="${out}  …[PONYTAIL]…"` line to drop it.
+- The **`[PONYTAIL]` badge** is a static trailing label rendered by the statusline itself — no plugin needed. Recolor it via `C_PONY`, or delete the `segs+=("…[PONYTAIL]…")` line to drop it.
 
 ### 5. Claude Code settings — merged into `~/.claude/settings.json`
 
