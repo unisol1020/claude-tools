@@ -6,8 +6,8 @@ My full [cmux](https://cmux.com) workspace, captured so it can be reinstalled or
 
 - **Terminal:** Ghostty rendering inside cmux — `Catppuccin Mocha` (dark) / `Latte` (light), auto-switching with macOS appearance, **92% opacity + 20px background blur** (the modern glass look), `JetBrainsMono Nerd Font` 14, roomy padding, a bar cursor that doesn't blink.
 - **Statusline** (bottom of Claude Code) — colored segments split by gray `|`:
-  `dir | ⎇ branch | ⇡ahead ⇣behind | ±files +adds -dels | context% | model 1M | ⬡ codegraph | [CAVEMAN]`
-  Context % is green→amber→red as it fills; the `1M` badge marks a 1M-context model; `⬡` shows the CodeGraph index state; `[CAVEMAN]` is the caveman plugin's token badge.
+  `dir | ⎇ branch | ⇡ahead ⇣behind | ±files +adds -dels | context% | model 1M | ⬡ codegraph | [PONYTAIL]`
+  Context % is green→amber→red as it fills; the `1M` badge marks a 1M-context model; `⬡` shows the CodeGraph index state; `[PONYTAIL]` is a static trailing badge.
 - **Sidebar:** matches the terminal background, shows live log + progress.
 - **Files** open in the `fresh` TUI editor in one persistent pane per workspace (no flicker, no new tabs); images/PDFs open in cmux's preview split.
 - **New workspace** boots straight into `claude`.
@@ -42,7 +42,7 @@ My full [cmux](https://cmux.com) workspace, captured so it can be reinstalled or
 >    - `--with-deps` → brew-installs `fresh-editor`, the JetBrains Mono Nerd Font, and `jq`. Ask before running brew.
 >    - `--with-db` → brew-installs `harlequin` (the recommended terminal SQL client).
 >    - `--bypass` → **SECURITY: also turns on `bypassPermissions`, which auto-approves *every* tool call with no prompt.** Only add this if the user explicitly asks for it; explain the risk first. The screenshot's "bypass permissions on" comes from this — it is OFF by default.
-> 5. **Report back:** confirm what was written, list any `✗` dependencies the installer printed with their `brew` commands, and tell the user to **restart Claude Code once**. Mention the `[CAVEMAN]` badge needs the caveman plugin installed separately (step in the README).
+> 5. **Report back:** confirm what was written, list any `✗` dependencies the installer printed with their `brew` commands, and tell the user to **restart Claude Code once**. Mention the ponytail plugin (lazy-senior-dev mode) installs separately (step in the README); the `[PONYTAIL]` statusline badge shows regardless.
 >
 > Update later with `git -C ~/.claude-tools pull` then re-run `install.sh`. Uninstall: restore the `.bak-*` files (see bottom).
 
@@ -118,11 +118,11 @@ Install the editor: `brew install fresh-editor`. To use a different editor, poin
 
 ### 4. The statusline — `~/.claude/statusline.sh`
 
-A bash script Claude Code runs to render the bottom bar (wired up via `statusLine` in settings). Segments, in order: **dir**, **⎇ branch**, **⇡ahead ⇣behind** vs upstream, **±files +adds -dels** (or **✓ clean**), **context %** (parsed from the live transcript; green <50%, amber 50–80%, red ≥80%), **model** (+ yellow `1M` badge for 1M-context models), **⬡ CodeGraph index** state (`✓` ok / `⚠` stale / `reindex` / `—` none), and the trailing **caveman** token badge.
+A bash script Claude Code runs to render the bottom bar (wired up via `statusLine` in settings). Segments, in order: **dir**, **⎇ branch**, **⇡ahead ⇣behind** vs upstream, **±files +adds -dels** (or **✓ clean**), **context %** (parsed from the live transcript; green <50%, amber 50–80%, red ≥80%), **model** (+ violet `1M` badge for 1M-context models), **⬡ CodeGraph index** state (`✓` ok / `⚠` stale / `reindex` / `—` none), and the trailing **`[PONYTAIL]`** badge.
 
 - **Recolor:** the `C_*` variables near the top are ANSI-256 codes (`\033[38;5;<n>m`). Change a number, save — it's live on the next render.
-- **Add/remove a segment:** each pushes onto the `segs` array; delete a block to drop it. The CodeGraph and caveman blocks no-op cleanly when those tools aren't installed.
-- The **caveman badge** path is globbed, so it survives plugin updates. To get the `[CAVEMAN]` badge at all you must install the caveman plugin (§5).
+- **Add/remove a segment:** each pushes onto the `segs` array; delete a block to drop it. The CodeGraph block no-ops cleanly when codegraph isn't installed.
+- The **`[PONYTAIL]` badge** is a static trailing label rendered by the statusline itself — no plugin needed. Recolor it via `C_PONY`, or delete the `out="${out}  …[PONYTAIL]…"` line to drop it.
 
 ### 5. Claude Code settings — merged into `~/.claude/settings.json`
 
@@ -139,7 +139,7 @@ The installer deep-merges these (your other settings are preserved):
 
 **Two things the installer does NOT do automatically:**
 
-- **`[CAVEMAN]` badge / caveman mode** — needs the caveman plugin. In Claude Code: `/plugin` → add marketplace `JuliusBrussee/caveman` → enable `caveman`. Restart. The statusline then shows the badge on its own.
+- **ponytail (lazy-senior-dev mode)** — install the plugin: `/plugin` → add marketplace `DietrichGebert/ponytail` → enable `ponytail`. Restart. (The `[PONYTAIL]` statusline badge is a static label that shows regardless.)
 - **⚠️ `permissions.defaultMode: bypassPermissions`** — this is the "**bypass permissions on**" line in the screenshot. It **auto-approves every tool call with no prompt** — Claude can edit files, run any shell command, and call any tool without asking. That is a real risk; only enable it if you understand it and trust your workflow. It is **off unless you pass `--bypass`** to the installer, or set it yourself:
   ```bash
   # opt-in, your call:

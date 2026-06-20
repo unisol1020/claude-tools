@@ -4,7 +4,7 @@
 # into settings.json. Idempotent; backs up settings before editing.
 #
 # Flags:
-#   --with-deps   also run setup-env.sh now (install ripgrep / CodeGraph / graphify / caveman)
+#   --with-deps   also run setup-env.sh now (install ripgrep / CodeGraph / graphify / ponytail)
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -58,7 +58,7 @@ cat <<'DONE'
 Done. Next:
   1. Restart Claude Code once (so the skill + any newly-wired hooks load).
   2. Open any repo and run  /bootstrap  — it installs the required extensions
-     (ripgrep, CodeGraph + MCP, graphify, caveman) if missing, builds the
+     (ripgrep, CodeGraph + MCP, graphify, ponytail) if missing, builds the
      CodeGraph index, offers to run /graphify, and records the repo as done.
   Or set up the toolchain right now without opening a repo:
      bash ~/.claude/skills/bootstrap/setup-env.sh

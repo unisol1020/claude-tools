@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Claude Code statusline — colored text segments divided by |:
-#   📁 dir | ⎇ branch | ⇡push ⇣pull | ±files +adds -dels | context% | model + 1M badge | ⬡ codegraph | caveman badge
+#   📁 dir | ⎇ branch | ⇡push ⇣pull | ±files +adds -dels | context% | model + 1M badge | ⬡ codegraph | ponytail badge
 input=$(cat)
 
 dir=$(printf '%s' "$input" | jq -r '.workspace.current_dir // .cwd // empty' 2>/dev/null)
@@ -15,7 +15,8 @@ C_DIR=$'\033[38;5;39m'; C_BR=$'\033[38;5;213m'; C_PUSH=$'\033[38;5;42m'
 C_PULL=$'\033[38;5;45m'; C_SYNC=$'\033[38;5;108m'; C_FILE=$'\033[38;5;214m'
 C_ADD=$'\033[38;5;42m'; C_DEL=$'\033[38;5;203m'; C_CLEAN=$'\033[38;5;108m'; C_MOD=$'\033[38;5;245m'
 C_CG=$'\033[38;5;79m'; C_CG_OFF=$'\033[38;5;240m'; C_CG_WARN=$'\033[38;5;208m'  # codegraph index
-C_1M=$'\033[38;5;220m'  # 1M-context model badge
+C_1M=$'\033[38;5;141m'  # 1M-context model badge (violet)
+C_PONY=$'\033[1m\033[38;5;213m'  # ponytail badge (bold pink)
 
 segs=()
 segs+=("${C_DIR}$(basename "$dir")${R}")
@@ -75,7 +76,7 @@ if [ -n "$model" ]; then
   segs+=("${C_MOD}${mname}${R}")
 fi
 
-# codegraph index status — trailing (sits near the caveman badge so it doesn't
+# codegraph index status — trailing (sits near the ponytail badge so it doesn't
 # crowd the git/context segments). cheap: only invoke the binary when an index db
 # exists, so non-indexed repos stay instant. perl alarm = 2s safety timeout (no `timeout` on macOS).
 if command -v codegraph >/dev/null 2>&1; then
@@ -107,11 +108,7 @@ for i in "${!segs[@]}"; do
   [ "$i" -eq 0 ] && out="${segs[$i]}" || out="${out}${SEP}${segs[$i]}"
 done
 
-# caveman token badge (own colors), trailing. Path globbed so it survives plugin updates.
-badge_sh=$(ls "$HOME"/.claude/plugins/cache/caveman/caveman/*/src/hooks/caveman-statusline.sh 2>/dev/null | head -1)
-if [ -n "$badge_sh" ] && [ -f "$badge_sh" ]; then
-  cm=$(printf '%s' "$input" | bash "$badge_sh" 2>/dev/null)
-  [ -n "$cm" ] && out="${out}  ${cm}"
-fi
+# ponytail badge — static trailing label (ponytail has no statusline hook to call).
+out="${out}  ${C_PONY}[PONYTAIL]${R}"
 
 printf '%s' "$out"

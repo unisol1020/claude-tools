@@ -11,7 +11,7 @@ Installs **only what's missing** (idempotent, safe to re-run), then sets the pro
 | **ripgrep** | the `rg` binary | `brew install ripgrep` |
 | **CodeGraph** | the `@colbymchenry/codegraph` CLI **+ its MCP server** in Claude Code, then a built index of the repo | `npm i -g @colbymchenry/codegraph` → `codegraph install -y` → `codegraph init` |
 | **graphify** | the `graphifyy` package **+ the `/graphify` skill** | `pip install graphifyy` → `graphify claude install` |
-| **caveman** | the caveman Claude Code plugin (compressed mode + statusline badge) | writes the marketplace + enable into `~/.claude/settings.json` |
+| **ponytail** | the ponytail Claude Code plugin (lazy-senior-dev mode — YAGNI, stdlib-first, fewest lines) | writes the marketplace + enable into `~/.claude/settings.json` |
 
 Then it builds the **CodeGraph index** (`codegraph init`), offers to build the **graphify knowledge graph** (`/graphify`), augments **CLAUDE.md**, and records the repo in `~/.claude/.bootstrapped-projects` so the session-start nudge stops.
 
@@ -31,9 +31,9 @@ It also installs a **session-start hook** that nudges anyone to run `/bootstrap`
 >    ```bash
 >    bash ~/.claude-tools/bootstrap/install.sh
 >    ```
->    Add `--with-deps` to also install the extensions (ripgrep / CodeGraph / graphify / caveman) right now. **Ask the user first** — it runs brew / npm / pip.
+>    Add `--with-deps` to also install the extensions (ripgrep / CodeGraph / graphify / ponytail) right now. **Ask the user first** — it runs brew / npm / pip.
 > 4. **Verify:** `ls -la ~/.claude/skills/bootstrap` is a symlink into `~/.claude-tools/bootstrap`.
-> 5. **Report back:** tell the user to **restart Claude Code once**, then open any repo and run **`/bootstrap`** — it installs the required extensions if missing, builds the CodeGraph index, offers `/graphify`, and records the repo. The caveman plugin + CodeGraph MCP surface after the restart.
+> 5. **Report back:** tell the user to **restart Claude Code once**, then open any repo and run **`/bootstrap`** — it installs the required extensions if missing, builds the CodeGraph index, offers `/graphify`, and records the repo. The ponytail plugin + CodeGraph MCP surface after the restart.
 >
 > Update later with `git -C ~/.claude-tools pull` (the symlink picks it up).
 

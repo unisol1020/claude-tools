@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Idempotent environment setup for the claude-tools stack. Installs + configures the
 # extensions the projects here expect — ripgrep, CodeGraph (+ its MCP), graphify (+ its
-# skill), and the caveman plugin — but ONLY the ones missing. Safe to re-run.
+# skill), and the ponytail plugin — but ONLY the ones missing. Safe to re-run.
 #
 # Runnable two ways:
 #   bash ~/.claude/skills/bootstrap/setup-env.sh     # standalone, from a terminal
@@ -52,18 +52,18 @@ else
   else note "✗ graphify needs python3 — install Python first"; fi
 fi
 
-# 4. caveman plugin (merge marketplace + enable into settings.json) ---------
+# 4. ponytail plugin (merge marketplace + enable into settings.json) ---------
 if have jq; then
   mkdir -p "$CLAUDE_DIR"; sj="$CLAUDE_DIR/settings.json"; [ -f "$sj" ] || echo '{}' > "$sj"
-  if jq -e '.enabledPlugins["caveman@caveman"] == true' "$sj" >/dev/null 2>&1; then
-    note "✓ caveman plugin already enabled"
+  if jq -e '.enabledPlugins["ponytail@ponytail"] == true' "$sj" >/dev/null 2>&1; then
+    note "✓ ponytail plugin already enabled"
   else
     cp -p "$sj" "$sj.bak-$(ts)"
-    jq '.extraKnownMarketplaces.caveman.source = {source:"github", repo:"JuliusBrussee/caveman"}
+    jq '.extraKnownMarketplaces.ponytail.source = {source:"github", repo:"DietrichGebert/ponytail"}
         | .enabledPlugins = (.enabledPlugins // {})
-        | .enabledPlugins["caveman@caveman"] = true' "$sj" > "$sj.tmp" && mv "$sj.tmp" "$sj" \
-      && note "✓ caveman marketplace + enable written to settings.json (fetched on next Claude Code start)"
+        | .enabledPlugins["ponytail@ponytail"] = true' "$sj" > "$sj.tmp" && mv "$sj.tmp" "$sj" \
+      && note "✓ ponytail marketplace + enable written to settings.json (fetched on next Claude Code start)"
   fi
-else note "✗ jq needed to enable the caveman plugin — brew install jq"; fi
+else note "✗ jq needed to enable the ponytail plugin — brew install jq"; fi
 
-echo "Done. Restart Claude Code once so the caveman plugin + CodeGraph MCP load."
+echo "Done. Restart Claude Code once so the ponytail plugin + CodeGraph MCP load."

@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: One command to make a repo (and a fresh machine) fully ready for this Claude Code setup. Installs and configures the required extensions if they're missing — ripgrep, CodeGraph + its MCP, graphify, and the caveman plugin — then builds the CodeGraph index, optionally builds the graphify knowledge graph, augments CLAUDE.md, and records the repo as bootstrapped so the session-start nudge stops. Use when onboarding a project or a teammate's machine, when the session-start hook says the repo isn't bootstrapped, or when the user runs /bootstrap.
+description: One command to make a repo (and a fresh machine) fully ready for this Claude Code setup. Installs and configures the required extensions if they're missing — ripgrep, CodeGraph + its MCP, graphify, and the ponytail plugin — then builds the CodeGraph index, optionally builds the graphify knowledge graph, augments CLAUDE.md, and records the repo as bootstrapped so the session-start nudge stops. Use when onboarding a project or a teammate's machine, when the session-start hook says the repo isn't bootstrapped, or when the user runs /bootstrap.
 ---
 
 # bootstrap — one-command project + environment setup
@@ -12,7 +12,7 @@ Run this to take a repo (and a fresh machine) from nothing to fully set up for t
 - **ripgrep** (`rg`) — fast search.
 - **CodeGraph** — the `@colbymchenry/codegraph` CLI + its MCP server in Claude Code, then a built index of this repo.
 - **graphify** — the `graphifyy` package + the `/graphify` skill, plus an optional **per-commit auto-sync** that keeps the graph fresh with zero tokens.
-- **caveman** — the caveman Claude Code plugin (compressed mode + statusline badge).
+- **ponytail** — the ponytail Claude Code plugin (lazy-senior-dev mode: YAGNI, stdlib-first, fewest lines).
 
 Only what's missing is installed; re-running is safe.
 
@@ -24,7 +24,7 @@ Only what's missing is installed; re-running is safe.
    ```bash
    bash ~/.claude/skills/bootstrap/setup-env.sh
    ```
-   Relay what it installed vs what was already there. It handles ripgrep, the CodeGraph CLI + MCP, graphify + its skill, and writes the caveman plugin into `~/.claude/settings.json`. The caveman plugin + CodeGraph MCP only surface after a **Claude Code restart** — note that for the end.
+   Relay what it installed vs what was already there. It handles ripgrep, the CodeGraph CLI + MCP, graphify + its skill, and writes the ponytail plugin into `~/.claude/settings.json`. The ponytail plugin + CodeGraph MCP only surface after a **Claude Code restart** — note that for the end.
 
 3. **Build the CodeGraph index.** If `$root/.codegraph/` doesn't exist:
    - **Large repo** (lots of files / a big monorepo)? **Ask first** — indexing can take a while and spins up workers. On confirm (or for a normal-size repo): `codegraph init "$root"`.
@@ -42,7 +42,7 @@ Only what's missing is installed; re-running is safe.
 
 7. **Record completion.** Append `root` as a new line to `~/.claude/.bootstrapped-projects` (create the file if missing; no duplicates). This stops the session-start nudge for this repo.
 
-8. **Report.** What was installed, whether the index built, whether graphify ran, whether the per-commit auto-sync was enabled, and: **restart Claude Code once** so the caveman plugin + CodeGraph MCP load.
+8. **Report.** What was installed, whether the index built, whether graphify ran, whether the per-commit auto-sync was enabled, and: **restart Claude Code once** so the ponytail plugin + CodeGraph MCP load.
 
 ## Rules
 

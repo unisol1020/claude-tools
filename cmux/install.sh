@@ -119,8 +119,9 @@ cat <<'DONE'
 
 Done. Notes:
   • Restart Claude Code once so the statusline + merged settings take effect.
-  • The [CAVEMAN] badge needs the caveman plugin (separate): /plugin in Claude Code,
-    add marketplace JuliusBrussee/caveman, enable it. The statusline shows it automatically.
+  • The [PONYTAIL] badge is a static label the statusline always shows. The ponytail
+    plugin (lazy-senior-dev mode) installs separately: /plugin in Claude Code, add
+    marketplace DietrichGebert/ponytail, enable it.
   • The "bypass permissions on" mode was NOT enabled unless you passed --bypass.
   • Open a DB anywhere:  db-tui 'postgres://user:pass@host/db'   (right-side cmux split)
   • Revert anything from the timestamped .bak files next to each target.
