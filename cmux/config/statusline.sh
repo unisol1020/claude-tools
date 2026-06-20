@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Claude Code statusline — colored text segments divided by |:
-#   📁 dir | ⎇ branch | ⇡push ⇣pull | ±files +adds -dels | context% | model + 1M badge | ⬡ codegraph | ponytail badge
+# Claude Code statusline — Catppuccin Mocha palette, thin  dividers:
+#   dir   branch  ⇡push ⇣pull  ±files  context%  model 1M  ⬡ codegraph  ponytail
 input=$(cat)
 
 dir=$(printf '%s' "$input" | jq -r '.workspace.current_dir // .cwd // empty' 2>/dev/null)
@@ -9,21 +9,21 @@ cd "$dir" 2>/dev/null || true
 model=$(printf '%s' "$input" | jq -r '.model.display_name // empty' 2>/dev/null)
 
 R=$'\033[0m'
-SEP=$' \033[38;5;240m|\033[0m '   # gray divider
-# fg colors
-C_DIR=$'\033[38;5;39m'; C_BR=$'\033[38;5;213m'; C_PUSH=$'\033[38;5;42m'
-C_PULL=$'\033[38;5;45m'; C_SYNC=$'\033[38;5;108m'; C_FILE=$'\033[38;5;214m'
-C_ADD=$'\033[38;5;42m'; C_DEL=$'\033[38;5;203m'; C_CLEAN=$'\033[38;5;108m'; C_MOD=$'\033[38;5;245m'
-C_CG=$'\033[38;5;79m'; C_CG_OFF=$'\033[38;5;240m'; C_CG_WARN=$'\033[38;5;208m'  # codegraph index
-C_1M=$'\033[38;5;141m'  # 1M-context model badge (violet)
-C_PONY=$'\033[1m\033[38;5;213m'  # ponytail badge (bold pink)
+SEP=$' \033[38;5;243m\033[0m '   # thin powerline divider (Overlay0)
+# fg colors — Catppuccin Mocha
+C_DIR=$'\033[38;5;111m'; C_BR=$'\033[38;5;183m'; C_PUSH=$'\033[38;5;114m'        # Blue / Mauve / Green
+C_PULL=$'\033[38;5;117m'; C_SYNC=$'\033[38;5;114m'; C_FILE=$'\033[38;5;215m'      # Sky / Green / Peach
+C_ADD=$'\033[38;5;114m'; C_DEL=$'\033[38;5;211m'; C_CLEAN=$'\033[38;5;114m'; C_MOD=$'\033[38;5;146m'  # Green / Red / Green / Subtext
+C_CG=$'\033[38;5;116m'; C_CG_OFF=$'\033[38;5;243m'; C_CG_WARN=$'\033[38;5;215m'   # Teal / Overlay / Peach
+C_1M=$'\033[38;5;183m'  # 1M-context badge (Mauve)
+C_PONY=$'\033[1m\033[38;5;218m'  # ponytail badge (bold Pink)
 
 segs=()
-segs+=("${C_DIR}$(basename "$dir")${R}")
+segs+=("${C_DIR} $(basename "$dir")${R}")
 
 branch=$(git symbolic-ref --short -q HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)
 if [ -n "$branch" ]; then
-  segs+=("${C_BR}⎇ ${branch}${R}")
+  segs+=("${C_BR} ${branch}${R}")
 
   ab=$(git rev-list --left-right --count '@{upstream}...HEAD' 2>/dev/null)
   if [ -n "$ab" ]; then
@@ -60,9 +60,9 @@ if [ -n "$tp" ] && [ -f "$tp" ]; then
     esac
     pct=$(( used * 100 / win ))
     usedk=$(( (used + 500) / 1000 ))
-    if   [ "$pct" -ge 80 ]; then C_CTX=$'\033[38;5;203m'   # red
-    elif [ "$pct" -ge 50 ]; then C_CTX=$'\033[38;5;214m'   # amber
-    else                         C_CTX=$'\033[38;5;42m'    # green
+    if   [ "$pct" -ge 80 ]; then C_CTX=$'\033[38;5;211m'   # Red
+    elif [ "$pct" -ge 50 ]; then C_CTX=$'\033[38;5;215m'   # Peach
+    else                         C_CTX=$'\033[38;5;114m'   # Green
     fi
     segs+=("${C_CTX}${pct}%${R}")
   fi
@@ -76,7 +76,7 @@ if [ -n "$model" ]; then
   segs+=("${C_MOD}${mname}${R}")
 fi
 
-# codegraph index status — trailing (sits near the ponytail badge so it doesn't
+# codegraph index status — trailing (sits near the badges so it doesn't
 # crowd the git/context segments). cheap: only invoke the binary when an index db
 # exists, so non-indexed repos stay instant. perl alarm = 2s safety timeout (no `timeout` on macOS).
 if command -v codegraph >/dev/null 2>&1; then
