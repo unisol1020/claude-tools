@@ -11,7 +11,7 @@ Run this to take a repo (and a fresh machine) from nothing to fully set up for t
 
 - **ripgrep** (`rg`) — fast search.
 - **CodeGraph** — the `@colbymchenry/codegraph` CLI + its MCP server in Claude Code, then a built index of this repo.
-- **graphify** — the `graphifyy` npm package (provides the `graphify` CLI) + the `/graphify` skill, plus an optional **per-commit auto-sync** that keeps the graph fresh with zero tokens.
+- **graphify** — the `graphifyy` PyPI package (provides the `graphify` CLI; Python 3.10+, installed via uv/pipx) + the `/graphify` skill, plus an optional **per-commit auto-sync** that keeps the graph fresh with zero tokens.
 - **ponytail** — the ponytail Claude Code plugin (lazy-senior-dev mode: YAGNI, stdlib-first, fewest lines).
 
 Only what's missing is installed; re-running is safe.

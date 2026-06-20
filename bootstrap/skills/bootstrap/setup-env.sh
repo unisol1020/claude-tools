@@ -34,23 +34,25 @@ if have codegraph; then
     || note "… run 'codegraph install -y' manually to add the MCP"
 fi
 
-# 3. graphify (npm pkg 'graphifyy', provides the 'graphify' CLI) + its skill -
+# 3. graphify (PyPI pkg 'graphifyy', provides the 'graphify' CLI) + its skill --
+# safishamsi/graphify is a Python tool needing Python 3.10+. Install with uv/pipx —
+# they fetch a compatible Python, isolate the package, and put 'graphify' on PATH.
+# Avoid plain 'pip install': it breaks when system Python < 3.10 or the env mismatches.
 if have graphify; then note "✓ graphify already installed ($(graphify --version 2>/dev/null))"
 else
-  note "installing graphifyy…"
-  if   have volta; then volta install graphifyy >/dev/null 2>&1
-  elif have npm;   then npm  i -g     graphifyy >/dev/null 2>&1
-  else note "✗ graphify needs node/npm (or volta) — install Node first"; fi
+  note "installing graphifyy (Python)…"
+  if   have uv;   then uv tool install graphifyy >/dev/null 2>&1
+  elif have pipx; then pipx install graphifyy >/dev/null 2>&1
+  elif have brew; then brew install uv >/dev/null 2>&1 && uv tool install graphifyy >/dev/null 2>&1
+  else note "✗ graphify needs uv or pipx (Python 3.10+) — 'brew install uv', then re-run"; fi
   have graphify && note "✓ graphify installed" \
-    || note "… graphify CLI not on PATH after install — reopen your shell, then re-run, or: npm i -g graphifyy"
+    || note "… graphify not on PATH — add ~/.local/bin (try 'uv tool update-shell'), reopen shell, re-run"
 fi
-# Install the graphify skill into Claude Code.
-# NB: 'graphify install claude' copies the SKILL.md into ~/.claude/skills (gives the
-# /graphify command). 'graphify claude install' only writes a CLAUDE.md section — no skill.
+# Register the graphify skill into Claude Code (gives the /graphify command).
 if [ -f "$CLAUDE_DIR/skills/graphify/SKILL.md" ]; then note "✓ graphify skill already installed"
 elif have graphify; then
-  graphify install claude >/dev/null 2>&1 && note "✓ graphify skill installed (/graphify available after restart)" \
-    || note "… run 'graphify install claude' manually"
+  graphify install >/dev/null 2>&1 && note "✓ graphify skill installed (/graphify available after restart)" \
+    || note "… run 'graphify install' manually"
 fi
 
 # 4. ponytail plugin (merge marketplace + enable into settings.json) ---------

@@ -10,7 +10,7 @@ Installs **only what's missing** (idempotent, safe to re-run), then sets the pro
 |-----------|------------------|-----|
 | **ripgrep** | the `rg` binary | `brew install ripgrep` |
 | **CodeGraph** | the `@colbymchenry/codegraph` CLI **+ its MCP server** in Claude Code, then a built index of the repo | `npm i -g @colbymchenry/codegraph` → `codegraph install -y` → `codegraph init` |
-| **graphify** | the `graphifyy` npm package (provides the `graphify` CLI) **+ the `/graphify` skill** | `npm i -g graphifyy` → `graphify claude install` |
+| **graphify** | the `graphifyy` PyPI package (provides the `graphify` CLI, Python 3.10+) **+ the `/graphify` skill** | `uv tool install graphifyy` → `graphify install` |
 | **ponytail** | the ponytail Claude Code plugin (lazy-senior-dev mode — YAGNI, stdlib-first, fewest lines) | writes the marketplace + enable into `~/.claude/settings.json` |
 
 Then it builds the **CodeGraph index** (`codegraph init`), offers to build the **graphify knowledge graph** (`/graphify`), augments **CLAUDE.md**, and records the repo in `~/.claude/.bootstrapped-projects` so the session-start nudge stops.
