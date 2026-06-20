@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Claude Code statusline — Catppuccin Mocha palette, · dividers:
-#   dir · ⎇ branch · ⇡push ⇣pull · ±files +adds -dels · context% · model 1M · ⬡ codegraph · [PONYTAIL]
+#   dir · ⎇ branch · ⇡push ⇣pull · ±files +adds -dels · context% · model 1M · effort · ⬡ codegraph · [PONYTAIL]
 input=$(cat)
 
 dir=$(printf '%s' "$input" | jq -r '.workspace.current_dir // .cwd // empty' 2>/dev/null)
@@ -74,6 +74,27 @@ if [ -n "$model" ]; then
     *'[1m]'*|*1M*) mname="${mname} ${C_1M}1M${R}${C_MOD}" ;;
   esac
   segs+=("${C_MOD}${mname}${R}")
+fi
+
+# reasoning effort — payload doesn't carry it, so read the live merged settings
+# (precedence: project-local > project > user, matching Claude Code's own merge).
+eff=$(printf '%s' "$input" | jq -r '.effortLevel // empty' 2>/dev/null)
+if [ -z "$eff" ]; then
+  eff_root=$(git rev-parse --show-toplevel 2>/dev/null || printf '%s' "$dir")
+  for f in "$eff_root/.claude/settings.local.json" "$eff_root/.claude/settings.json" "$HOME/.claude/settings.json"; do
+    [ -f "$f" ] || continue
+    eff=$(jq -r '.effortLevel // empty' "$f" 2>/dev/null); [ -n "$eff" ] && break
+  done
+fi
+if [ -n "$eff" ]; then
+  case "$eff" in
+    max)    C_EFF=$'\033[38;5;211m' ;;  # Red
+    xhigh)  C_EFF=$'\033[38;5;215m' ;;  # Peach
+    high)   C_EFF=$'\033[38;5;223m' ;;  # Yellow
+    medium) C_EFF=$'\033[38;5;117m' ;;  # Sky
+    *)      C_EFF=$'\033[38;5;245m' ;;  # Overlay (low/unknown)
+  esac
+  segs+=("${C_EFF}${eff}${R}")
 fi
 
 # codegraph index status — trailing (sits near the badge so it doesn't
