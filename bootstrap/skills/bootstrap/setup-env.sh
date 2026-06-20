@@ -34,22 +34,21 @@ if have codegraph; then
     || note "… run 'codegraph install -y' manually to add the MCP"
 fi
 
-# 3. graphify (python pkg 'graphifyy') + its skill --------------------------
-if [ -f "$CLAUDE_DIR/skills/graphify/SKILL.md" ]; then note "✓ graphify skill already installed"
+# 3. graphify (npm pkg 'graphifyy', provides the 'graphify' CLI) + its skill -
+if have graphify; then note "✓ graphify already installed ($(graphify --version 2>/dev/null))"
 else
-  PY="$(command -v python3 || true)"
-  if [ -n "$PY" ]; then
-    note "installing graphifyy…"
-    "$PY" -m pip install -q graphifyy 2>/dev/null \
-      || "$PY" -m pip install -q --break-system-packages graphifyy 2>/dev/null \
-      || note "… 'pip install graphifyy' failed — install it manually"
-    if have graphify; then
-      graphify claude install >/dev/null 2>&1 && note "✓ graphify skill installed" \
-        || note "… run 'graphify claude install' manually"
-    else
-      note "… graphify CLI not on PATH after install — reopen your shell, then 'graphify claude install'"
-    fi
-  else note "✗ graphify needs python3 — install Python first"; fi
+  note "installing graphifyy…"
+  if   have volta; then volta install graphifyy >/dev/null 2>&1
+  elif have npm;   then npm  i -g     graphifyy >/dev/null 2>&1
+  else note "✗ graphify needs node/npm (or volta) — install Node first"; fi
+  have graphify && note "✓ graphify installed" \
+    || note "… graphify CLI not on PATH after install — reopen your shell, then re-run, or: npm i -g graphifyy"
+fi
+# Install the graphify skill into Claude Code.
+if [ -f "$CLAUDE_DIR/skills/graphify/SKILL.md" ]; then note "✓ graphify skill already installed"
+elif have graphify; then
+  graphify claude install >/dev/null 2>&1 && note "✓ graphify skill installed" \
+    || note "… run 'graphify claude install' manually"
 fi
 
 # 4. ponytail plugin (merge marketplace + enable into settings.json) ---------
