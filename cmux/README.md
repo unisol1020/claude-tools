@@ -1,6 +1,6 @@
 # cmux setup — my terminal + editor + Claude Code environment, 1:1
 
-My full [cmux](https://cmux.com) workspace, captured so it can be reinstalled or shared exactly: a **glass terminal** (Ghostty, Catppuccin, transparent + blurred), a **flicker-free `fresh` editor** that file-opens route into, a **colorful Claude Code statusline**, and the cmux behaviors that tie them together. Send this README to Claude Code and say *"install this"* — it lays everything down (backing up whatever you already have) and tells you which dependencies to add.
+My full [cmux](https://cmux.com) workspace, captured so it can be reinstalled or shared exactly: a **glass terminal** (Ghostty, Catppuccin, transparent + blurred), **file-opens that route into Cursor** (opened at the git repo root, as a project), a **colorful Claude Code statusline**, and the cmux behaviors that tie them together. Send this README to Claude Code and say *"install this"* — it lays everything down (backing up whatever you already have) and tells you which dependencies to add.
 
 ## What it looks like
 
@@ -9,7 +9,7 @@ My full [cmux](https://cmux.com) workspace, captured so it can be reinstalled or
   `dir · ⎇ branch · ⇡ahead ⇣behind · ±files +adds -dels · context% · model 1M · ⬡ codegraph · [PONYTAIL]`
   Catppuccin Mocha colors with `·` dividers. Context % is green→peach→red as it fills; the `1M` badge marks a 1M-context model; `⬡` shows the CodeGraph index state; `[PONYTAIL]` is a static trailing badge.
 - **Sidebar:** matches the terminal background, shows live log + progress.
-- **Files** open in the `fresh` TUI editor in one persistent pane per workspace (no flicker, no new tabs); images/PDFs open in cmux's preview split.
+- **Files** open in **Cursor**, with the file's **git repo root** opened as the workspace folder (so it's a project, not a lone file); images/PDFs open in cmux's preview split.
 - **New workspace** boots straight into `claude`.
 
 ## What's in the box
@@ -18,8 +18,7 @@ My full [cmux](https://cmux.com) workspace, captured so it can be reinstalled or
 |------|-------------|------|
 | `config/cmux.json` | `~/.config/cmux/cmux.json` | cmux app behavior (editor routing, sidebar, browser link handling, minimal mode) |
 | `config/ghostty-config` | `~/.config/ghostty/config` | terminal rendering — **colors, theme, opacity, blur, font, cursor** |
-| `config/open-in-micro.sh` | `~/.config/cmux/open-in-micro.sh` | `preferredEditor` wrapper — routes file-opens into a persistent `fresh` session |
-| `config/fresh/catppuccin-mocha.json` + `config/fresh/config.snippet.json` | `~/.config/fresh/themes/` + merged into `~/.config/fresh/config.json` | `fresh` editor theme — **Catppuccin Mocha + terminal background**, so the editor matches the glass terminal |
+| `config/open-in-micro.sh` | `~/.config/cmux/open-in-micro.sh` | `preferredEditor` wrapper — routes text/code file-opens into Cursor at the git repo root (media → cmux preview) |
 | `config/statusline.sh` | `~/.claude/statusline.sh` | the Claude Code statusline (segments + colors) |
 | `config/claude-settings.snippet.json` | merged into `~/.claude/settings.json` | statusLine / theme / tui / effort / model |
 | `bin/db-tui.sh` | `~/.local/bin/db-tui` | open a terminal SQL client in a right-side cmux split |
@@ -39,7 +38,7 @@ My full [cmux](https://cmux.com) workspace, captured so it can be reinstalled or
 >    bash ~/.claude-tools/cmux/install.sh
 >    ```
 > 4. **Offer the optional flags — ASK the user first, don't assume:**
->    - `--with-deps` → brew-installs `fresh-editor`, the JetBrains Mono Nerd Font, and `jq`. Ask before running brew.
+>    - `--with-deps` → brew-installs Cursor (`--cask cursor`), the JetBrains Mono Nerd Font, and `jq`. Ask before running brew.
 >    - `--with-db` → brew-installs `harlequin` (the recommended terminal SQL client).
 >    - `--bypass` → **SECURITY: also turns on `bypassPermissions`, which auto-approves *every* tool call with no prompt.** Only add this if the user explicitly asks for it; explain the risk first. The screenshot's "bypass permissions on" comes from this — it is OFF by default.
 > 5. **Report back:** confirm what was written, list any `✗` dependencies the installer printed with their `brew` commands, and tell the user to **restart Claude Code once**. Mention the ponytail plugin (lazy-senior-dev mode) installs separately (step in the README); the `[PONYTAIL]` statusline badge shows regardless.
@@ -49,7 +48,7 @@ My full [cmux](https://cmux.com) workspace, captured so it can be reinstalled or
 ### Requirements
 
 - **macOS 14+** and **[cmux](https://cmux.com)** (`brew install --cask cmux`). cmux bundles Ghostty, so the `~/.config/ghostty/config` is read by cmux directly.
-- **`fresh-editor`** — the `fresh` TUI editor the open-wrapper drives (`brew install fresh-editor`).
+- **Cursor** — the editor the open-wrapper drives (`brew install --cask cursor`); the wrapper calls its `cursor` CLI at `/usr/local/bin/cursor`.
 - **`jq`** (statusline + settings merge), **JetBrains Mono Nerd Font** (`brew install --cask font-jetbrains-mono-nerd-font`).
 - Optional: **`harlequin`** for the DB TUI.
 
@@ -88,7 +87,7 @@ What this config changes from cmux defaults:
 
 | Key | Value | Effect |
 |-----|-------|--------|
-| `app.preferredEditor` | the open wrapper | files open in `fresh` (see §3) instead of the default `zed` |
+| `app.preferredEditor` | the open wrapper | files open in Cursor (see §3) instead of the default `zed` |
 | `app.openSupportedFilesInCmux` | `false` | hand text/code to the wrapper rather than cmux's built-in editor |
 | `app.openMarkdownInCmuxViewer` | `true` | `.md` opens in cmux's live markdown renderer |
 | `app.minimalMode` | `true` | stripped-down chrome |
@@ -96,26 +95,23 @@ What this config changes from cmux defaults:
 | `sidebar.showLog` / `showProgress` | `true` | live agent log + progress in the sidebar |
 | `sidebarAppearance.matchTerminalBackground` | `true` | sidebar tint follows the terminal background (the glass look extends to the sidebar) |
 | `terminal.showScrollBar` | `false` | no scrollbar |
-| `fileExplorer.doubleClickAction` | `preferredEditor` | double-click a file → open in `fresh` |
+| `fileExplorer.doubleClickAction` | `preferredEditor` | double-click a file → open in Cursor |
 | `shortcuts.bindings.switchRightSidebarToDock` | `cmd+shift+g` | custom keybind |
 | `browser.*` | all `true` | terminal links, `localhost` ports, and PR links open in cmux's built-in browser |
 | `newWorkspaceCommand` | `claude` | every new workspace launches Claude Code |
 
 Edit with `cmux settings cmux-json`; the schema is referenced at the top of the file for autocomplete. Reload with `cmux reload-config`. **Back up first** — the installer keeps timestamped `.bak` copies, and so should manual edits.
 
-### 3. The `fresh` editor + open-routing wrapper — `~/.config/cmux/open-in-micro.sh`
+### 3. The open-routing wrapper → Cursor — `~/.config/cmux/open-in-micro.sh`
 
 cmux calls this wrapper whenever you open a readable file (Cmd-click a terminal path, double-click in the file tree, click a Claude Code file mention). It:
 
 - **images / PDF / audio / video** → cmux's built-in preview, split to the right.
-- **text / code** → the [`fresh`](https://sinelaw.github.io/fresh/) TUI editor ([source](https://github.com/sinelaw/fresh)), in **one persistent session + pane per workspace**. The first open boots `fresh -a ws-<id>`; every later open routes the file into that already-running editor (`fresh --cmd session open-file`) — **no new tab, no shell boot, no flicker.** The pane UUID is remembered in `~/.config/cmux/fresh-pane-<ws>.id`; if it died, the wrapper respawns it. `fresh` launches at the **git repo root** so the workspace context stays put across a monorepo. (Session detection matches both `Active sessions:` on `fresh` ≤0.4.0 and `Running daemons:` on 0.4.1+.)
-  - **Placement:** a new editor pane opens on the **far-right edge at ~35% width**, taking space from its left neighbor so the **focused pane (e.g. Claude) is never split or resized**. It focuses the current rightmost pane before splitting, with a `swap-pane` safety-net to force the editor rightmost if focus didn't take, then sizes it by driving its left divider in exact pixels. Reuses route into the live pane untouched. Every decision is logged to `~/.config/cmux/open-wrapper-debug.log`.
+- **text / code** → **Cursor**. The wrapper walks up from the file to the nearest `.git` and opens **that repo root as the workspace folder** — so the file lands in a real project window (LSP, search, file tree all scoped to the repo), not as a lone untitled file. Cursor reuses an existing window already rooted at that folder, otherwise opens a new one. The invocation is `cursor "$projroot" "$file"`. Every open is logged to `~/.config/cmux/open-wrapper.log`.
 
-  Opens are **serialized per workspace** with an atomic `mkdir` lock (`~/.config/cmux/open-lock-<ws>.d`): two files opened at once (Claude mentioning several, a fast double-click) no longer each spawn their own surface — the second waits and routes into the session the first created.
+The wrapper is GUI-launched (minimal PATH), so each binary is an absolute path: Cursor's CLI at `/usr/local/bin/cursor` (a symlink into `Cursor.app`) and cmux at `/Applications/cmux.app/Contents/Resources/bin/cmux`. If yours live elsewhere, adjust `CURSOR` / `CMUX` at the top of the script.
 
-**Theme:** the editor is set to **Catppuccin Mocha** with `editor.use_terminal_bg` on, so its background is the terminal's (the glass shows through) and its colors match cmux's dark theme. The installer ships the theme file and **deep-merges** just `theme` + `use_terminal_bg` into `~/.config/fresh/config.json` — your LSP, formatters, and other `fresh` settings are left untouched.
-
-Install the editor: `brew install fresh-editor`. To use a different editor, point `app.preferredEditor` at it directly (e.g. `"zed"`, `"nvim"`) or edit `EDITOR_BIN` in the wrapper.
+To use a different editor, point `app.preferredEditor` at it directly (e.g. `"zed"`, `"nvim"`) or edit `CURSOR` in the wrapper.
 
 ### 4. The statusline — `~/.claude/statusline.sh`
 
@@ -152,7 +148,7 @@ The installer deep-merges these (your other settings are preserved):
 
 ## Terminal database client (TUI)
 
-For poking at a database from the terminal — fitting the cmux/`fresh` aesthetic — install one of these and use the `db-tui` launcher.
+For poking at a database from the terminal — fitting the cmux aesthetic — install one of these and use the `db-tui` launcher.
 
 - **[harlequin](https://harlequin.sh)** *(recommended)* — a full SQL IDE in the terminal: results grid, schema tree, query history, autocomplete; one tool for **Postgres, SQLite, MySQL, DuckDB**, and more.
   ```bash

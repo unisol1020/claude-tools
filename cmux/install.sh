@@ -4,7 +4,7 @@
 # Claude Code settings are MERGED (never overwritten). macOS only.
 #
 # Flags:
-#   --with-deps   brew-install missing deps (fresh-editor, JetBrains Mono Nerd Font, jq)
+#   --with-deps   brew-install missing deps (Cursor, JetBrains Mono Nerd Font, jq)
 #   --with-db     brew-install the recommended terminal SQL client (harlequin)
 #   --bypass      ALSO set Claude Code permissions.defaultMode=bypassPermissions (see WARNING)
 set -euo pipefail
@@ -29,31 +29,10 @@ echo "Installing cmux + Ghostty + statusline config ..."
 backup "$HOME/.config/cmux/cmux.json"
 render "$DIR/config/cmux.json" > "$HOME/.config/cmux/cmux.json"; echo "  wrote ~/.config/cmux/cmux.json"
 
-# 2. editor-open wrapper
+# 2. editor-open wrapper (routes text/code opens to Cursor at the git repo root)
 backup "$HOME/.config/cmux/open-in-micro.sh"
 cp "$DIR/config/open-in-micro.sh" "$HOME/.config/cmux/open-in-micro.sh"
 chmod +x "$HOME/.config/cmux/open-in-micro.sh"; echo "  wrote ~/.config/cmux/open-in-micro.sh"
-
-# 2b. fresh editor theme — make the editor match the glass terminal (Catppuccin Mocha +
-#     terminal background). The theme file is copied in; the snippet is DEEP-MERGED so your
-#     existing LSP / formatter / language config in fresh's config.json is preserved.
-mkdir -p "$HOME/.config/fresh/themes"
-backup "$HOME/.config/fresh/themes/catppuccin-mocha.json"
-cp "$DIR/config/fresh/catppuccin-mocha.json" "$HOME/.config/fresh/themes/catppuccin-mocha.json"
-echo "  wrote ~/.config/fresh/themes/catppuccin-mocha.json"
-if command -v jq >/dev/null 2>&1; then
-  fresh_snip="$(jq 'del(."//")' "$DIR/config/fresh/config.snippet.json")"
-  backup "$HOME/.config/fresh/config.json"
-  if [ -f "$HOME/.config/fresh/config.json" ]; then
-    printf '%s' "$fresh_snip" | jq -s '.[0] * .[1]' "$HOME/.config/fresh/config.json" /dev/stdin > "$HOME/.config/fresh/config.json.tmp" \
-      && mv "$HOME/.config/fresh/config.json.tmp" "$HOME/.config/fresh/config.json"
-  else
-    printf '%s\n' "$fresh_snip" > "$HOME/.config/fresh/config.json"
-  fi
-  echo "  merged theme/use_terminal_bg into ~/.config/fresh/config.json"
-else
-  echo "  WARN: jq not found — skipped fresh theme merge. Set \"theme\":\"catppuccin-mocha\" in ~/.config/fresh/config.json manually."
-fi
 
 # 3. Ghostty terminal rendering (colors / theme / opacity / blur / font)
 backup "$HOME/.config/ghostty/config"
@@ -86,8 +65,8 @@ ln -sf "$DIR/bin/db-tui.sh" "$HOME/.local/bin/db-tui"; echo "  linked ~/.local/b
 brew_has() { command -v brew >/dev/null 2>&1; }
 if [ "$WITH_DEPS" = 1 ]; then
   brew_has && { echo "Installing deps via brew ..."
-    command -v jq    >/dev/null 2>&1 || brew install jq
-    command -v fresh >/dev/null 2>&1 || brew install fresh-editor
+    command -v jq     >/dev/null 2>&1 || brew install jq
+    command -v cursor >/dev/null 2>&1 || brew install --cask cursor
     brew list --cask font-jetbrains-mono-nerd-font >/dev/null 2>&1 || { brew tap homebrew/cask-fonts 2>/dev/null; brew install --cask font-jetbrains-mono-nerd-font; }
   } || echo "  WARN: Homebrew not found; install deps manually (see README)."
 fi
@@ -110,7 +89,7 @@ echo
 echo "=== Dependency check ==="
 chk() { if command -v "$1" >/dev/null 2>&1; then echo "  ✓ $1"; else echo "  ✗ $1 — $2"; fi; }
 chk cmux      "brew install --cask cmux"
-chk fresh     "brew install fresh-editor   (the 'fresh' editor the open wrapper drives)"
+chk cursor    "brew install --cask cursor  (the editor the open wrapper drives)"
 chk jq        "brew install jq             (statusline + settings merge)"
 chk harlequin "brew install harlequin      (terminal SQL client; or use db-tui's other clients)"
 brew list --cask font-jetbrains-mono-nerd-font >/dev/null 2>&1 && echo "  ✓ JetBrains Mono Nerd Font" || echo "  ✗ JetBrains Mono Nerd Font — brew install --cask font-jetbrains-mono-nerd-font"
