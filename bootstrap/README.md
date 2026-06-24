@@ -12,6 +12,7 @@ Installs **only what's missing** (idempotent, safe to re-run), then sets the pro
 | **CodeGraph** | the `@colbymchenry/codegraph` CLI **+ its MCP server** in Claude Code, then a built index of the repo | `npm i -g @colbymchenry/codegraph` → `codegraph install -y` → `codegraph init` |
 | **graphify** | the `graphifyy` PyPI package (provides the `graphify` CLI, Python 3.10+) **+ the `/graphify` skill** | `uv tool install graphifyy` → `graphify install` |
 | **ponytail** | the ponytail Claude Code plugin (lazy-senior-dev mode — YAGNI, stdlib-first, fewest lines) | writes the marketplace + enable into `~/.claude/settings.json` |
+| **claude-mem** | the [claude-mem](https://github.com/thedotmack/claude-mem) plugin (persistent cross-session memory + the `/learn-codebase` priming skill) | writes the marketplace + enable into `~/.claude/settings.json` |
 
 Then it builds the **CodeGraph index** (`codegraph init`), offers to build the **graphify knowledge graph** (`/graphify`), augments **CLAUDE.md**, and records the repo in `~/.claude/.bootstrapped-projects` so the session-start nudge stops.
 
@@ -31,7 +32,7 @@ It also installs a **session-start hook** that nudges anyone to run `/bootstrap`
 >    ```bash
 >    bash ~/.claude-tools/bootstrap/install.sh
 >    ```
->    Add `--with-deps` to also install the extensions (ripgrep / CodeGraph / graphify / ponytail) right now. **Ask the user first** — it runs brew / npm / pip.
+>    Add `--with-deps` to also install the extensions (ripgrep / CodeGraph / graphify / ponytail / claude-mem) right now. **Ask the user first** — it runs brew / npm / uv.
 > 4. **Verify:** `ls -la ~/.claude/skills/bootstrap` is a symlink into `~/.claude-tools/bootstrap`.
 > 5. **Report back:** tell the user to **restart Claude Code once**, then open any repo and run **`/bootstrap`** — it installs the required extensions if missing, builds the CodeGraph index, offers `/graphify`, and records the repo. The ponytail plugin + CodeGraph MCP surface after the restart.
 >
@@ -64,7 +65,7 @@ bash ~/.claude/skills/bootstrap/setup-env.sh
 | File | Role |
 |------|------|
 | `skills/bootstrap/SKILL.md` | the `/bootstrap` flow Claude runs per repo |
-| `skills/bootstrap/setup-env.sh` | idempotent installer for the four extensions (also runnable standalone) |
+| `skills/bootstrap/setup-env.sh` | idempotent installer for the required extensions (also runnable standalone) |
 | `hooks/bootstrap-check.sh` | SessionStart nudge — fires in any not-yet-bootstrapped repo |
 | `install.sh` | symlinks the skill + hook, wires the SessionStart hooks into `settings.json` |
 

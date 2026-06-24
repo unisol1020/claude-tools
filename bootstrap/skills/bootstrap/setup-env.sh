@@ -55,7 +55,7 @@ elif have graphify; then
     || note "… run 'graphify install' manually"
 fi
 
-# 4. ponytail plugin (merge marketplace + enable into settings.json) ---------
+# 4. plugins: ponytail + claude-mem (merge marketplace + enable into settings.json) -
 if have jq; then
   mkdir -p "$CLAUDE_DIR"; sj="$CLAUDE_DIR/settings.json"; [ -f "$sj" ] || echo '{}' > "$sj"
   if jq -e '.enabledPlugins["ponytail@ponytail"] == true' "$sj" >/dev/null 2>&1; then
@@ -67,6 +67,15 @@ if have jq; then
         | .enabledPlugins["ponytail@ponytail"] = true' "$sj" > "$sj.tmp" && mv "$sj.tmp" "$sj" \
       && note "✓ ponytail marketplace + enable written to settings.json (fetched on next Claude Code start)"
   fi
-else note "✗ jq needed to enable the ponytail plugin — brew install jq"; fi
+  if jq -e '.enabledPlugins["claude-mem@thedotmack"] == true' "$sj" >/dev/null 2>&1; then
+    note "✓ claude-mem plugin already enabled"
+  else
+    cp -p "$sj" "$sj.bak-$(ts)"
+    jq '.extraKnownMarketplaces.thedotmack.source = {source:"github", repo:"thedotmack/claude-mem"}
+        | .enabledPlugins = (.enabledPlugins // {})
+        | .enabledPlugins["claude-mem@thedotmack"] = true' "$sj" > "$sj.tmp" && mv "$sj.tmp" "$sj" \
+      && note "✓ claude-mem marketplace + enable written to settings.json (fetched on next Claude Code start)"
+  fi
+else note "✗ jq needed to enable the ponytail + claude-mem plugins — brew install jq"; fi
 
-echo "Done. Restart Claude Code once so the ponytail plugin + CodeGraph MCP load."
+echo "Done. Restart Claude Code once so the ponytail + claude-mem plugins + CodeGraph MCP load."
