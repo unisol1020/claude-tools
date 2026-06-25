@@ -1,6 +1,6 @@
 ---
 name: qa-run
-description: Orchestrate a manual-QA pass (functional or design) on the running app in ANY project. Detects whether the project is a single app or a monorepo, remembers a dev URL and login credentials PER APP, plus an optional read-only DB, asking only for what isn't saved yet (and remembering "declined" so it never re-asks). Then scopes the run to the app(s) being tested and invokes the manual-qa agent. Use when the user asks to "QA this", "verify the app works", "test the flow", "check if X works / looks right in the browser", or invokes /qa-run. Runs in the MAIN thread (it needs to ask the user questions); it sets up context, then delegates the click-through to the manual-qa subagent.
+description: Orchestrate a manual-QA pass (functional or design) on the running app in ANY project. Detects whether the project is a single app or a monorepo, remembers a dev URL and login credentials PER APP, plus an optional read-only DB, asking only for what isn't saved yet (and remembering "declined" so it never re-asks). Then scopes the run to the app(s) being tested and invokes the manual-qa agent. Use when the user asks to "QA this", "verify the app works", "test the flow", "check if X works / looks right in the browser", or invokes /qa-run. Runs in the MAIN thread (it needs to ask the user questions); it sets up context, then delegates the click-through to the manual-qa subagent. Also supports an unattended task mode where the loop-engine injects a per-task URL/port + worktree and no questions are asked.
 ---
 
 # qa-run — per-project QA orchestrator
@@ -24,6 +24,18 @@ State lives in `<project-root>/.claude/qa.local.json`. URLs and credentials are 
 ```
 
 `status` is the memory: `set` = use it · `declined` = user said no, **never ask again** · `no-mcp` = no DB MCP connected. Missing entry/field = ask. A single-app project just has one entry in `apps`.
+
+## Task mode (unattended — driven by the loop engine)
+
+When the **loop-engine** invokes you for a parallel task run, it passes a resolved context and you **do not prompt the user** (the run is unattended). The context: `{ taskId, worktree, app, url, dbUrl? }` where `url` is the task's **isolated app port** from the devops/`task-env` manifest (e.g. `http://localhost:54123`), not the project's normal dev URL.
+
+In task mode:
+- **Use the passed `url`** as the target — skip the URL gate entirely (don't ask, don't probe the default port).
+- **Creds are per app, reused across tasks.** Read the app's `credentials` from the **main repo's** `.claude/qa.local.json` (`git rev-parse --git-common-dir` → the shared repo, since this file is gitignored and won't exist in a fresh worktree checkout); a `<worktree>/.claude/qa.local.json` overrides if present. `set` → log in with them; `declined`/missing → run unauthenticated and let manual-qa emit `BLOCKED_AT_LOGIN` if it hits a wall (the loop surfaces that to the user; you never invent creds).
+- **DB:** if a `dbUrl` was passed, use it read-only for the cross-check; otherwise honor the project's `db` config. Don't ask.
+- Then go straight to step 8 (invoke `manual-qa`) with that context, and step 11 (report the verdict back to the loop).
+
+The interactive steps below apply only to **human-initiated** runs (someone asks you to QA something directly).
 
 ## Steps
 

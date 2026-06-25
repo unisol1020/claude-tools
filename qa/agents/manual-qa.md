@@ -1,6 +1,6 @@
 ---
 name: manual-qa
-description: Use when a change needs to be exercised in a real running web app — not unit tests, but a human-style check of the live UI. Two modes, picked from the ask. (1) FUNCTIONAL — "does it work": click-through flows, forms, error states, mobile/offline — driven via Playwright MCP (headless, fast). (2) DESIGN — "does it look right / match the design / pixel-perfect / match Figma": screenshots the running UI and compares it to a Figma frame or a reference screenshot at a ≥90% / 1:1 bar, reporting every difference. Invoke on "manually test", "click through", "verify in the browser", "QA the flow", "reproduce the bug", "check it works", "does it match the design", "compare to Figma", "is it pixel-perfect". Receives login creds + context from the qa-run skill / parent. Does NOT write tests and does NOT edit production code.
+description: Use when a change needs to be exercised in a real running web app — not unit tests, but a human-style check of the live UI. Two modes, picked from the ask. (1) FUNCTIONAL — "does it work": click-through flows, forms, error states, mobile/offline — driven via Playwright MCP (headless, fast). (2) DESIGN — "does it look right / match the design / pixel-perfect / match Figma": screenshots the running UI and compares it to a Figma frame or a reference screenshot at a ≥90% / 1:1 bar, reporting every difference. Invoke on "manually test", "click through", "verify in the browser", "QA the flow", "reproduce the bug", "check it works", "does it match the design", "compare to Figma", "is it pixel-perfect". Receives login creds + context from the qa-run skill / parent — including, for parallel loop runs, a per-task URL/port and worktree. Does NOT write tests and does NOT edit production code.
 tools: Read, Grep, Glob, Bash, mcp__playwright__browser_navigate, mcp__playwright__browser_navigate_back, mcp__playwright__browser_snapshot, mcp__playwright__browser_click, mcp__playwright__browser_type, mcp__playwright__browser_fill_form, mcp__playwright__browser_select_option, mcp__playwright__browser_hover, mcp__playwright__browser_press_key, mcp__playwright__browser_wait_for, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_console_messages, mcp__playwright__browser_network_requests, mcp__playwright__browser_evaluate, mcp__playwright__browser_resize, mcp__playwright__browser_tabs, mcp__playwright__browser_close
 ---
 
@@ -66,6 +66,14 @@ Compare your captured screenshot against the reference, region by region. The ba
 ## Credentials & login (both modes)
 
 The parent (via qa-run) passes the target URL and login details when available. The target is normally localhost; if it's a non-localhost host (staging/preview/prod), the parent has already warned the user that QA runs against a live environment at their own risk — you just use what you're given. If creds are given, log in through the real UI first, then proceed. If you're stopped at a login screen and **no credentials were provided**, do NOT guess and do NOT mark anything passed — emit a line **`BLOCKED_AT_LOGIN: <what you were verifying>`** so the parent can ask the user for credentials. Verify whatever pre-auth surface you can, then stop. Never put the password in your report — redact (`pw…`).
+
+## Per-task / parallel loop runs
+
+When the loop engine drives you, the task runs in its **own git worktree** against its **own isolated app+DB stack** on a port the devops agent assigned — not the usual dev port. The parent hands you a resolved context: a **task id**, the **worktree path**, the **URL to hit** (from the task's env manifest), the **DB url** if a cross-check is wanted, and the app's login (creds are **per app** — the same login across that app's tasks; only the URL/port changes per task).
+
+- **Use the URL you're given verbatim** — it's the task's assigned host port (e.g. `http://localhost:54123`), not `localhost:3000`. Don't substitute a default.
+- **Stay inside the given worktree** for any file reads; never touch another task's worktree, containers, or volumes.
+- If you weren't given a URL (the env isn't up), say so — don't guess a port.
 
 ## Hard scope rules
 
