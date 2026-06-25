@@ -1,18 +1,44 @@
 # claude-tools
 
-A collection of shareable tools for **Claude Code** — drop-in agents and skills that work in any local project. Install the whole set, or just the one you want, by sending this README (or a tool's README) to Claude Code and saying *"install this"*.
+My kit of **Claude Code** tools — agents, skills, and config that install into `~/.claude` and work in any local project. Each one is a top-level folder with its own README and a one-line installer. Take the whole set, or just the one you want, by sending a README to Claude Code and saying *"install this"*.
+
+The set has a shape: **bootstrap** gets a machine and a repo ready, **cmux** is the desktop environment you run Claude Code in, **qa** and **tickets** are the everyday helpers, and **loop** is the autonomous capstone that reuses qa and tickets to take a ticket all the way to an approved PR on its own.
+
+## How the tools fit together
+
+```mermaid
+flowchart TD
+  subgraph setup["Set up once"]
+    BOOT["bootstrap — /bootstrap<br/>ready a repo + machine"]
+    CMUX["cmux — terminal + editor +<br/>statusline (macOS)"]
+  end
+  CC["Claude Code, in any repo"]
+  subgraph daily["Everyday, on demand"]
+    QA["qa — does it work?<br/>does it match the design?"]
+    TIX["tickets — human-readable<br/>Linear / Jira tickets"]
+  end
+  LOOP["loop — autonomous:<br/>investigate → build → QA → PR → review"]
+  BOOT --> CC
+  CMUX --> CC
+  CC --> QA
+  CC --> TIX
+  CC --> LOOP
+  LOOP -->|its QA step| QA
+  LOOP -->|its ticket step| TIX
+  LOOP -->|one surface per task| CMUX
+```
 
 ## Tools
 
 | Tool | What it does | Install by link |
 |------|--------------|-----------------|
-| [**qa**](qa/README.md) | A `manual-qa` agent that drives a real browser to verify a feature *actually works* (functional) or *matches the design* (Figma / pixel-perfect). Remembers per-project URL + login + DB, asks once. | *"install this: https://github.com/unisol1020/claude-tools/blob/main/qa/README.md"* |
-| [**tickets**](tickets/README.md) | A `ticket` skill that creates **human-readable** Linear / Jira tickets (not AI slop) — repro + verification + where the problem is, pulls Figma/design links from the chat, posts test results as a comment. | *"install this: https://github.com/unisol1020/claude-tools/blob/main/tickets/README.md"* |
-| [**cmux**](cmux/README.md) | A full **cmux + Ghostty + Claude Code** environment, 1:1 — glass terminal (Catppuccin, transparent/blurred), the `fresh` editor + flicker-free file-open routing, the colored statusline, plus a `db-tui` terminal SQL-client launcher. Backs up before writing; macOS only. | *"install this: https://github.com/unisol1020/claude-tools/blob/main/cmux/README.md"* |
-| [**bootstrap**](bootstrap/README.md) | A `/bootstrap` skill — one command that installs + configures the required extensions if missing (ripgrep, CodeGraph + MCP, graphify, the ponytail plugin), builds the CodeGraph index, offers `/graphify`, and records the repo. For onboarding teammates so they don't hunt for what to install. | *"install this: https://github.com/unisol1020/claude-tools/blob/main/bootstrap/README.md"* |
-| [**loop**](loop/README.md) | An autonomous **loop engine** + an **investigator**. Say *"get 10 tickets from Linear and check them"* → it triages into a checkbox list (run / skip / investigate-only), and on your OK fans out one loop per ticket. Each loop: investigate → plan → implement → CLAUDE.md rule-check → manual QA → PR to dev → poll comments → stop on approval. Per-task git worktree + isolated Docker stack (own DB, own ports). Reuses `qa`, `tickets`, and `/loop`. | *"install this: https://github.com/unisol1020/claude-tools/blob/main/loop/README.md"* |
+| [**bootstrap**](bootstrap/README.md) | `/bootstrap` — one command that readies a repo and a fresh machine: installs/verifies the toolchain it expects (ripgrep, CodeGraph + MCP, graphify, ponytail, claude-mem), builds the CodeGraph index, offers `/graphify`, augments `CLAUDE.md`, and records the repo so the session-start nudge stops. Start here when onboarding. | *"install this: https://github.com/unisol1020/claude-tools/blob/main/bootstrap/README.md"* |
+| [**cmux**](cmux/README.md) | A full **cmux + Ghostty + Claude Code** environment, captured 1:1 — glass terminal (Catppuccin, transparent/blurred), file-opens routed into **Cursor** at the git repo root, a colored statusline, merged Claude settings, and a `db-tui` terminal SQL-client launcher. Backs up every file it touches; macOS only. | *"install this: https://github.com/unisol1020/claude-tools/blob/main/cmux/README.md"* |
+| [**qa**](qa/README.md) | A `manual-qa` agent that drives a real browser to check a feature *works* (functional, via Playwright) or *matches the design* (Figma / pixel-perfect). Remembers per-project URL + login + DB, asks once. | *"install this: https://github.com/unisol1020/claude-tools/blob/main/qa/README.md"* |
+| [**tickets**](tickets/README.md) | A `ticket` skill that writes **human-readable** Linear / Jira tickets (not AI slop) — repro + how-to-verify + where the problem lives — pulls Figma/Sentry/Slack context from connected MCPs, and posts test results as a comment. | *"install this: https://github.com/unisol1020/claude-tools/blob/main/tickets/README.md"* |
+| [**loop**](loop/README.md) | An autonomous **loop engine** + an **investigator**. Say *"get 10 tickets from Linear and check them"* → it triages into a checkbox list (run / skip / investigate-only), and on your OK fans out one loop per ticket. Each loop: plan once → implement → `CLAUDE.md` rule-check → manual QA → PR to the dev branch → poll comments → stop on approval. Per-task git worktree + isolated Docker stack (own DB, own ports). Reuses **qa**, **tickets**, and `/loop`. | *"install this: https://github.com/unisol1020/claude-tools/blob/main/loop/README.md"* |
 
-Each tool's README has its own self-install block, so you can install them independently.
+Each tool's README has its own self-install block, so you can install them one at a time. The `loop` tool reuses `qa` and `tickets`, so install those alongside it.
 
 ## Install everything — just send this README to Claude Code
 
@@ -30,13 +56,13 @@ You don't run anything. Paste this file (or its URL) into **Claude Code** and sa
 >    ```bash
 >    for f in ~/.claude-tools/*/install.sh; do echo "== $f =="; bash "$f"; done
 >    ```
->    Each installer symlinks its agent/skill into `~/.claude/` (so `git pull` updates everything) and registers or checks for the MCP it needs.
-> 4. **Verify:** `ls -la ~/.claude/agents ~/.claude/skills` shows the symlinks pointing into `~/.claude-tools/*`.
-> 5. **Report back to the user** — confirm what installed (claude-qa, claude-tickets), tell them to **restart Claude Code once** so agents / skills / MCP tools load, then summarize each tool in a line or two (paraphrase the per-tool READMEs; keep it short).
+>    Each installer symlinks its agent/skill into `~/.claude/` (so a later `git pull` updates everything) and registers or checks for the MCP it needs. They're idempotent — safe to re-run.
+> 4. **Verify:** `ls -la ~/.claude/agents ~/.claude/skills` shows symlinks pointing into `~/.claude-tools/*`.
+> 5. **Report back to the user** — confirm what installed (bootstrap, cmux, qa, tickets, loop), call out any `✗` dependency lines an installer printed (with the `brew`/`npm` fix), tell them to **restart Claude Code once** so agents / skills / MCP tools load, then summarize each tool in a line or two (paraphrase the per-tool READMEs; keep it short).
 >
 > Update later with `git -C ~/.claude-tools pull` (symlinks pick it up). Uninstall: see each tool's README, or the bottom of this file.
 
-Requirements: [Claude Code](https://claude.com/claude-code), git, and Node.js (for the tools that use an `npx` MCP, e.g. claude-qa's Playwright). Per-tool requirements are listed in each tool's README.
+Requirements: [Claude Code](https://claude.com/claude-code) and `git` for everything. Node.js (`npx`) for the Playwright MCP that `qa` uses. The `loop` tool also wants Docker + `jq` + `gh`, and `cmux` is macOS-only. Per-tool requirements are in each tool's README.
 
 ### Manual install (if you'd rather)
 
@@ -48,7 +74,7 @@ Then restart Claude Code.
 
 ## Adding a new tool to this repo
 
-Each tool is a top-level directory with its own `README.md` (including a `🤖`-prefixed self-install block), an executable `install.sh` that symlinks its pieces into `~/.claude/`, and a `skills/` and/or `agents/` directory. Mirror an existing tool's layout and the repo-level installer loop above will pick it up automatically.
+Each tool is a top-level directory with its own `README.md` (including a `🤖`-prefixed self-install block), an executable `install.sh` that symlinks its pieces into `~/.claude/`, and a `skills/` and/or `agents/` directory. Mirror an existing tool's layout and the repo-level installer loop above picks it up automatically.
 
 ## Uninstall
 

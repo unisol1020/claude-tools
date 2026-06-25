@@ -1,24 +1,37 @@
 # cmux setup — my terminal + editor + Claude Code environment, 1:1
 
-My full [cmux](https://cmux.com) workspace, captured so it can be reinstalled or shared exactly: a **glass terminal** (Ghostty, Catppuccin, transparent + blurred), **file-opens that route into Cursor** (opened at the git repo root, as a project), a **colorful Claude Code statusline**, and the cmux behaviors that tie them together. Send this README to Claude Code and say *"install this"* — it lays everything down (backing up whatever you already have) and tells you which dependencies to add.
+This is my whole [cmux](https://cmux.com) workspace captured as files, so it reinstalls (or shares) exactly. cmux is a native macOS terminal app that bundles Ghostty; this setup makes it a glass terminal (Catppuccin theme, transparent + blurred), routes file-opens into Cursor at the git repo root instead of opening lone files, adds a colored Claude Code statusline, and ships a `db-tui` launcher that opens a terminal SQL client in a right-side split. Send this README to Claude Code and say *"install this"* — the installer lays everything down, backs up every file it touches, and **merges** your Claude settings instead of clobbering them. macOS only.
 
-## What it looks like
+## How it works
 
-- **Terminal:** Ghostty rendering inside cmux — `Catppuccin Mocha` (dark) / `Latte` (light), auto-switching with macOS appearance, **92% opacity + 20px background blur** (the modern glass look), `JetBrainsMono Nerd Font` 14, roomy padding, a bar cursor that doesn't blink.
-- **Statusline** (bottom of Claude Code) — colored segments split by `·` dividers:
-  `dir · ⎇ branch · ⇡ahead ⇣behind · ±files +adds -dels · context% · model 1M · ⬡ codegraph · [PONYTAIL]`
-  Catppuccin Mocha colors with `·` dividers. Context % is green→peach→red as it fills; the `1M` badge marks a 1M-context model; `⬡` shows the CodeGraph index state; `[PONYTAIL]` is a static trailing badge.
-- **Sidebar:** matches the terminal background, shows live log + progress.
-- **Files** open in **Cursor**, with the file's **git repo root** opened as the workspace folder (so it's a project, not a lone file); images/PDFs open in cmux's preview split.
-- **New workspace** boots straight into `claude`.
+The installer copies six config files to where each tool reads them. They don't talk to each other directly — each one just changes how its own app behaves, and together they produce the look and the file-routing.
 
-## What's in the box
+```mermaid
+graph LR
+  CMUXJSON["config/cmux.json"] --> A["~/.config/cmux/cmux.json"]
+  WRAP["config/open-in-micro.sh"] --> B["~/.config/cmux/open-in-micro.sh"]
+  GHOST["config/ghostty-config"] --> C["~/.config/ghostty/config"]
+  STATUS["config/statusline.sh"] --> D["~/.claude/statusline.sh"]
+  SNIP["config/claude-settings.snippet.json"] -- "deep-merge" --> E["~/.claude/settings.json"]
+  DBTUI["bin/db-tui.sh"] -- "symlink" --> F["~/.local/bin/db-tui"]
+
+  A -- "preferredEditor points at wrapper" --> B
+  B -- "text/code" --> CURSOR["Cursor, opened at git repo root"]
+  B -- "images/PDF/video" --> PREVIEW["cmux preview, split right"]
+  C --> LOOK["glass terminal: theme, opacity, blur, font"]
+  D --> BAR["colored Claude Code statusline"]
+  E -- "statusLine command" --> D
+```
+
+Walkthrough: cmux reads `cmux.json` for its own behavior (and `ghostty/config` for all the visuals, since it bundles Ghostty). When you Cmd-click a path, double-click a file, or click a Claude Code file mention, cmux hands the file to the open wrapper, which sends media to its preview split and text/code to Cursor — rooted at the file's git repo so it lands in a real project window. Claude Code reads the merged `settings.json`, which points `statusLine` at `statusline.sh`. `db-tui` rides along on your PATH for when you want a SQL client.
+
+## What you get
 
 | File | Installs to | Role |
 |------|-------------|------|
-| `config/cmux.json` | `~/.config/cmux/cmux.json` | cmux app behavior (editor routing, sidebar, browser link handling, minimal mode) |
-| `config/ghostty-config` | `~/.config/ghostty/config` | terminal rendering — **colors, theme, opacity, blur, font, cursor** |
-| `config/open-in-micro.sh` | `~/.config/cmux/open-in-micro.sh` | `preferredEditor` wrapper — routes text/code file-opens into Cursor at the git repo root (media → cmux preview) |
+| `config/cmux.json` | `~/.config/cmux/cmux.json` | cmux app behavior — editor routing, sidebar, browser link handling, minimal mode, `claude` on new workspace |
+| `config/ghostty-config` | `~/.config/ghostty/config` | all terminal visuals — theme, opacity, blur, font, cursor |
+| `config/open-in-micro.sh` | `~/.config/cmux/open-in-micro.sh` | the `preferredEditor` wrapper — routes text/code to Cursor at the git repo root, media to cmux preview |
 | `config/statusline.sh` | `~/.claude/statusline.sh` | the Claude Code statusline (segments + colors) |
 | `config/claude-settings.snippet.json` | merged into `~/.claude/settings.json` | statusLine / theme / tui / effort / model |
 | `bin/db-tui.sh` | `~/.local/bin/db-tui` | open a terminal SQL client in a right-side cmux split |
@@ -47,9 +60,9 @@ My full [cmux](https://cmux.com) workspace, captured so it can be reinstalled or
 
 ### Requirements
 
-- **macOS 14+** and **[cmux](https://cmux.com)** (`brew install --cask cmux`). cmux bundles Ghostty, so the `~/.config/ghostty/config` is read by cmux directly.
+- **macOS 14+** and **[cmux](https://cmux.com)** (`brew install --cask cmux`). cmux bundles Ghostty, so it reads `~/.config/ghostty/config` directly.
 - **Cursor** — the editor the open-wrapper drives (`brew install --cask cursor`); the wrapper calls its `cursor` CLI at `/usr/local/bin/cursor`.
-- **`jq`** (statusline + settings merge), **JetBrains Mono Nerd Font** (`brew install --cask font-jetbrains-mono-nerd-font`).
+- **`jq`** (statusline + settings merge) and the **JetBrains Mono Nerd Font** (`brew install --cask font-jetbrains-mono-nerd-font`).
 - Optional: **`harlequin`** for the DB TUI.
 
 ---
@@ -58,7 +71,7 @@ My full [cmux](https://cmux.com) workspace, captured so it can be reinstalled or
 
 ### 1. Terminal colors / theme / glass — `~/.config/ghostty/config`
 
-This is where **all visual terminal config** lives (cmux reads Ghostty's config; it is *not* in `cmux.json`).
+All visual terminal config lives here. cmux reads Ghostty's config; it is *not* in `cmux.json`.
 
 ```ini
 theme = light:Catppuccin Latte,dark:Catppuccin Mocha   # auto light/dark; or a single theme name
@@ -77,7 +90,7 @@ cursor-style-blink = false
 mouse-hide-while-typing = true
 ```
 
-- **Change the theme:** `ghostty +list-themes` shows every built-in (Catppuccin, Dracula, Nord, Tokyo Night, Gruvbox, …). Set `theme = <name>` or the `light:…,dark:…` pair.
+- **Change the theme:** `ghostty +list-themes` lists every built-in (Catppuccin, Dracula, Nord, Tokyo Night, Gruvbox, and more). Set `theme = <name>` or the `light:…,dark:…` pair.
 - **More/less glass:** drop `background-opacity` toward `0.80` for more transparency; set `background-blur = 0` to kill the blur.
 - **Apply:** `cmux reload-config` (or **⌘⇧,**) — no app restart.
 
@@ -87,7 +100,7 @@ What this config changes from cmux defaults:
 
 | Key | Value | Effect |
 |-----|-------|--------|
-| `app.preferredEditor` | the open wrapper | files open in Cursor (see §3) instead of the default `zed` |
+| `app.preferredEditor` | the open wrapper | files open via the wrapper (§3) instead of cmux's default editor |
 | `app.openSupportedFilesInCmux` | `false` | hand text/code to the wrapper rather than cmux's built-in editor |
 | `app.openMarkdownInCmuxViewer` | `true` | `.md` opens in cmux's live markdown renderer |
 | `app.minimalMode` | `true` | stripped-down chrome |
@@ -95,52 +108,63 @@ What this config changes from cmux defaults:
 | `sidebar.showLog` / `showProgress` | `true` | live agent log + progress in the sidebar |
 | `sidebarAppearance.matchTerminalBackground` | `true` | sidebar tint follows the terminal background (the glass look extends to the sidebar) |
 | `terminal.showScrollBar` | `false` | no scrollbar |
-| `fileExplorer.doubleClickAction` | `preferredEditor` | double-click a file → open in Cursor |
+| `fileExplorer.doubleClickAction` | `preferredEditor` | double-click a file → open via the wrapper |
 | `shortcuts.bindings.switchRightSidebarToDock` | `cmd+shift+g` | custom keybind |
 | `browser.*` | all `true` | terminal links, `localhost` ports, and PR links open in cmux's built-in browser |
 | `newWorkspaceCommand` | `claude` | every new workspace launches Claude Code |
 
-Edit with `cmux settings cmux-json`; the schema is referenced at the top of the file for autocomplete. Reload with `cmux reload-config`. **Back up first** — the installer keeps timestamped `.bak` copies, and so should manual edits.
+Edit with `cmux settings cmux-json`; the schema referenced at the top of the file gives autocomplete. Reload with `cmux reload-config`.
 
 ### 3. The open-routing wrapper → Cursor — `~/.config/cmux/open-in-micro.sh`
 
-cmux calls this wrapper whenever you open a readable file (Cmd-click a terminal path, double-click in the file tree, click a Claude Code file mention). It:
+cmux calls this wrapper whenever you open a readable file (Cmd-click a terminal path, double-click in the file tree, click a Claude Code file mention). It routes by type:
 
 - **images / PDF / audio / video** → cmux's built-in preview, split to the right.
-- **text / code** → **Cursor**. The wrapper walks up from the file to the nearest `.git` and opens **that repo root as the workspace folder** — so the file lands in a real project window (LSP, search, file tree all scoped to the repo), not as a lone untitled file. Cursor reuses an existing window already rooted at that folder, otherwise opens a new one. The invocation is `cursor "$projroot" "$file"`. Every open is logged to `~/.config/cmux/open-wrapper.log`.
+- **text / code** → **Cursor**. The wrapper walks up from the file to the nearest `.git` and opens **that repo root as the workspace folder** — so the file lands in a real project window (LSP, search, file tree all scoped to the repo), not a lone untitled file. Cursor reuses a window already rooted at that folder, else opens a new one. The invocation is `cursor "$projroot" "$file"`. Every open is logged to `~/.config/cmux/open-wrapper.log`.
 
-The wrapper is GUI-launched (minimal PATH), so each binary is an absolute path: Cursor's CLI at `/usr/local/bin/cursor` (a symlink into `Cursor.app`) and cmux at `/Applications/cmux.app/Contents/Resources/bin/cmux`. If yours live elsewhere, adjust `CURSOR` / `CMUX` at the top of the script.
+The wrapper is GUI-launched (minimal PATH), so each binary is an absolute path: Cursor's CLI at `/usr/local/bin/cursor` and cmux at `/Applications/cmux.app/Contents/Resources/bin/cmux`. If yours live elsewhere, adjust `CURSOR` / `CMUX` at the top of the script.
 
 To use a different editor, point `app.preferredEditor` at it directly (e.g. `"zed"`, `"nvim"`) or edit `CURSOR` in the wrapper.
 
 ### 4. The statusline — `~/.claude/statusline.sh`
 
-A bash script Claude Code runs to render the bottom bar (wired up via `statusLine` in settings), styled to the **Catppuccin Mocha** palette with `·` dividers. Segments, in order: **dir**, **⎇ branch**, **⇡ahead ⇣behind** vs upstream, **±files +adds -dels** (or **✓ clean**), **context %** (parsed from the live transcript; green <50%, peach 50–80%, red ≥80%), **model** (+ Mauve `1M` badge for 1M-context models), **⬡ CodeGraph index** state (`✓` ok / `⚠` stale / `reindex` / `—` none), and the trailing **`[PONYTAIL]`** badge.
+A bash script Claude Code runs to render the bottom bar (wired up via `statusLine` in settings), styled to the **Catppuccin Mocha** palette with `·` dividers. Segments, in order:
 
-- **Recolor:** the `C_*` variables near the top are ANSI-256 codes (`\033[38;5;<n>m`). Change a number, save — it's live on the next render.
-- **Add/remove a segment:** each pushes onto the `segs` array; delete a block to drop it. The CodeGraph block no-ops cleanly when codegraph isn't installed.
-- The **`[PONYTAIL]` badge** is a static trailing label rendered by the statusline itself — no plugin needed. Recolor it via `C_PONY`, or delete the `segs+=("…[PONYTAIL]…")` line to drop it.
+```
+dir · ⎇ branch · ⇡ahead ⇣behind · ±files +adds -dels · context% · model 1M · effort · ⬡ codegraph · [PONYTAIL]
+```
+
+- **branch** + **ahead/behind** vs upstream, **±files +adds -dels** (or **✓ clean**).
+- **context %** is parsed from the live transcript (matches `/context`): green <50%, peach 50–80%, red ≥80%.
+- **model** name, with a Mauve `1M` badge for a 1M-context model.
+- **effort** — read from the live merged settings (project-local > project > user), colored by level.
+- **⬡ codegraph** — only when `codegraph` is installed and the repo has a `.codegraph/codegraph.db`: `✓` ok, `⚠N` stale (N pending), `reindex`, `off`, or `—` when no index db.
+- **`[PONYTAIL]`** — a static trailing label; no plugin needed.
+
+Tweaks:
+- **Recolor:** the `C_*` variables near the top are ANSI-256 codes (`\033[38;5;<n>m`). Change a number, save — live on the next render.
+- **Add/remove a segment:** each pushes onto the `segs` array; delete a block to drop it. The codegraph block no-ops cleanly when codegraph isn't installed.
+- **Drop the badge:** delete the `segs+=("…[PONYTAIL]…")` line, or recolor it via `C_PONY`.
 
 ### 5. Claude Code settings — merged into `~/.claude/settings.json`
 
-The installer deep-merges these (your other settings are preserved):
+The installer deep-merges these keys (your other settings are preserved):
 
 | Key | Value | Effect |
 |-----|-------|--------|
 | `statusLine.command` | `bash ~/.claude/statusline.sh` | wires up §4 |
 | `theme` | `dark` | Claude Code UI theme |
 | `tui` | `fullscreen` | full-screen TUI |
-| `effortLevel` | `xhigh` | max reasoning effort |
-| `model` | `opus[1m]` | Opus 4.x with the 1M-context window |
+| `effortLevel` | `xhigh` | reasoning effort |
+| `model` | `opus[1m]` | Opus with the 1M-context window |
 | `autoCompactEnabled` | `true` | auto-compact long sessions |
 
 **Two things the installer does NOT do automatically:**
 
-- **ponytail (lazy-senior-dev mode)** — install the plugin: `/plugin` → add marketplace `DietrichGebert/ponytail` → enable `ponytail`. Restart. (The `[PONYTAIL]` statusline badge is a static label that shows regardless.)
-- **⚠️ `permissions.defaultMode: bypassPermissions`** — this is the "**bypass permissions on**" line in the screenshot. It **auto-approves every tool call with no prompt** — Claude can edit files, run any shell command, and call any tool without asking. That is a real risk; only enable it if you understand it and trust your workflow. It is **off unless you pass `--bypass`** to the installer, or set it yourself:
+- **ponytail (lazy-senior-dev mode)** — install the plugin: `/plugin` → add marketplace `DietrichGebert/ponytail` → enable `ponytail`. Restart. (The `[PONYTAIL]` statusline badge shows regardless.)
+- **⚠️ `permissions.defaultMode: bypassPermissions`** — the "**bypass permissions on**" line in the screenshot. It **auto-approves every tool call with no prompt** — Claude can edit files, run any shell command, and call any tool without asking. That is a real risk; only enable it if you understand it and trust your workflow. It is **off unless you pass `--bypass`**, or set it yourself:
   ```bash
-  # opt-in, your call:
-  bash ~/.claude-tools/cmux/install.sh --bypass
+  bash ~/.claude-tools/cmux/install.sh --bypass   # opt-in, your call
   ```
   Toggle it live anytime in Claude Code with **Shift+Tab** (cycles permission modes).
 
@@ -148,9 +172,9 @@ The installer deep-merges these (your other settings are preserved):
 
 ## Terminal database client (TUI)
 
-For poking at a database from the terminal — fitting the cmux aesthetic — install one of these and use the `db-tui` launcher.
+For poking at a database from the terminal, install one of these and use the `db-tui` launcher.
 
-- **[harlequin](https://harlequin.sh)** *(recommended)* — a full SQL IDE in the terminal: results grid, schema tree, query history, autocomplete; one tool for **Postgres, SQLite, MySQL, DuckDB**, and more.
+- **[harlequin](https://harlequin.sh)** *(recommended)* — a SQL IDE in the terminal: results grid, schema tree, query history, autocomplete; one tool for Postgres, SQLite, MySQL, DuckDB, and more.
   ```bash
   brew install harlequin            # or: pipx install 'harlequin[postgres]'
   ```
@@ -165,7 +189,7 @@ DATABASE_URL='postgres://…' db-tui           # from the env
 DB_CLIENT=lazysql db-tui                      # force a client
 ```
 
-It auto-picks the first installed client (harlequin → lazysql → pgcli → litecli → usql).
+It auto-picks the first installed client in order: harlequin → lazysql → pgcli → litecli → usql.
 
 ---
 

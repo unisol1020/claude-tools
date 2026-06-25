@@ -1,29 +1,52 @@
 # claude-qa
 
-Shareable QA toolset for **Claude Code** — a global `manual-qa` agent that drives a real browser to verify whether a feature *actually works* in any local web project, plus the skills it runs on.
+A QA agent for Claude Code that drives a real browser to check your running web app — in any local project. You ask "does login work?" or "does /pricing match this Figma?" in plain words; it opens the app, clicks through (or screenshots and compares), and reports PASS / FAIL with what it actually saw. It never writes tests and never edits your code.
 
 One agent, **two modes**, picked from how you ask:
 
-- **Functional** — *"does it work"*: thinks like a **senior QA first** — plans a charter across the **success path, error path, and the edge cases a real user will actually hit** (weird input, double-submit, back/refresh mid-flow, expired session, empty/overflowing data, slow/offline, …) — then click-through flows, forms, error states, mobile/offline via **Playwright MCP** (headless, fast, cross-platform).
-- **Design** — *"does it look right / match Figma / pixel-perfect"*: screenshots the running UI and compares it to a **Figma frame or reference screenshot** at a **≥90% / 1:1** bar, reporting every difference. To capture the UI it uses the first available of: **cmux** (macOS, truest render) → Claude Desktop browser → Chrome-connected browser → **Playwright** headless screenshot → else it tells you to enable one.
+- **Functional** — *"does it work?"* It plans like a senior QA — success path, error path, and the edge cases real users hit (double-submit, back mid-flow, expired session, empty/overflowing data, offline) — then drives a headless browser via the **Playwright MCP** to verify each.
+- **Design** — *"does it look right / match Figma?"* It screenshots the running UI and compares it to a Figma frame or reference screenshot at a **≥90% / 1:1** bar, listing every difference.
 
-On the first QA run in a project it asks — once — for local-dev login credentials and a read-only DB URL (via a connected DB MCP like Supabase, or `psql` if you have no MCP), remembers your choice per project (including "no, don't ask again"), and never nags you again.
+The first time you QA a project, it asks once for the app's URL, optional login, and an optional read-only DB — then remembers your answers per project (including "no, don't ask again") and stops nagging.
 
-> **💡 Recommended: run it inside `cmux` (macOS native terminal app) or the Claude Desktop app.** Both give a real browser / WebView, so the agent can open and screenshot the live UI at the truest fidelity — best for design / "does it look right" checks. A plain terminal works too: functional QA falls back to headless Playwright everywhere.
+## How it works
+
+You make a request in the main thread. The `qa-run` skill sets up context — which app, what URL, login, DB — saving answers so it asks only for what's missing. Then it hands a self-contained brief to the `manual-qa` subagent, which does the actual click-through or screenshot compare and reports back.
+
+```mermaid
+flowchart TD
+    A["You: 'QA the login flow' /<br/>'does /pricing match this Figma?'"] --> B[qa-run skill, main thread]
+    B --> C{config saved in<br/>.claude/qa.local.json?}
+    C -->|missing| D[ask once: URL, login, DB<br/>remember 'set' or 'declined']
+    C -->|saved| E
+    D --> E[invoke manual-qa subagent<br/>with resolved context]
+    E --> F{mode from the ask}
+    F -->|does it work| G[FUNCTIONAL:<br/>Playwright MCP drives<br/>headless browser]
+    F -->|does it look right| H[DESIGN:<br/>screenshot UI vs Figma<br/>at ≥90% bar]
+    G --> V[report PASS / FAIL / PARTIAL<br/>+ evidence]
+    H --> V
+    G -->|auth wall, no creds| L["BLOCKED_AT_LOGIN<br/>→ qa-run pings you for creds"]
+    L --> B
+```
+
+The login ping is the one interactive escape hatch: if a flow needs a login but you declined credentials, `manual-qa` stops at the wall and emits `BLOCKED_AT_LOGIN` rather than guessing or faking a pass — `qa-run` then asks you whether to provide creds and re-runs.
+
+`qa-run` also has an **unattended task mode**: the loop-engine injects a per-task URL/port and worktree, and it skips every question and runs straight through.
 
 ## What you get
 
 | Piece | Type | Role |
 |-------|------|------|
-| `agents/manual-qa.md` | global agent | drives the browser like a human QA engineer; reports PASS/FAIL; never edits code |
-| `skills/playwright-qa/` | skill | the headless-browser playbook (loop, capabilities, when-to-use vs cmux) |
-| `skills/qa-run/` | skill | orchestrator: per-project credential + DB setup (ask once, remember), then runs `manual-qa` |
+| `agents/manual-qa.md` | global agent | drives the browser like a human QA; reports PASS/FAIL; no code edits, no test files |
+| `skills/qa-run/` | skill | orchestrator: gathers + remembers per-app URL/login + project DB, then invokes `manual-qa` |
+| `skills/playwright-qa/` | skill | the headless-browser playbook — the navigate→snapshot→act→assert loop and when to use it vs cmux |
+| `templates/qa.local.json.example` | template | shape of the per-project memory file |
 
 ## Install — just send this README to Claude Code
 
 You don't run anything. Paste this file (or its URL) into **Claude Code** and say *"install this"*. Claude does the rest.
 
-> **🤖 Claude Code — if a user sent you this README, install the toolset now. Do not ask setup questions (credentials/URLs/DB are gathered per-project on the first QA run, not at install). Steps:**
+> **🤖 Claude Code — if a user sent you this README, install the toolset now. Do not ask setup questions (URL/login/DB are gathered per-project on the first QA run, not at install). Steps:**
 >
 > 1. **Preflight.** Confirm `git`, `node`/`npx`, and the `claude` CLI are on PATH. If any is missing, stop and tell the user to install it first.
 > 2. **Clone (idempotent):**
@@ -35,7 +58,7 @@ You don't run anything. Paste this file (or its URL) into **Claude Code** and sa
 >    ```bash
 >    bash ~/.claude-tools/qa/install.sh
 >    ```
->    It symlinks the `manual-qa` agent + `playwright-qa` and `qa-run` skills into `~/.claude/`, and registers the **Playwright MCP** at user scope (`npx @playwright/mcp@latest --headless`).
+>    It symlinks the `manual-qa` agent + `playwright-qa` and `qa-run` skills into `~/.claude/`, then registers the **Playwright MCP** at user scope (`claude mcp add -s user playwright -- npx @playwright/mcp@latest --headless`). The install is idempotent — symlinks mean a later `git pull` updates everything, and an already-registered MCP is left alone.
 > 4. **Verify:** `claude mcp get playwright` shows *Connected*; `ls -la ~/.claude/agents/manual-qa.md ~/.claude/skills/playwright-qa ~/.claude/skills/qa-run` are symlinks into `~/.claude-tools/qa`.
 > 5. **Report back to the user** — confirm it's installed, then explain how it works in this simple step-by-step (paraphrase naturally, keep it short):
 >
@@ -56,8 +79,6 @@ You don't run anything. Paste this file (or its URL) into **Claude Code** and sa
 >
 > Update later with `git -C ~/.claude-tools pull` (symlinks pick it up). Uninstall: see the bottom of this file.
 
-Requirements: [Claude Code](https://claude.com/claude-code), Node.js (for `npx`), git. **Recommended runtime:** `cmux` (macOS) or the Claude Desktop app — a real browser/WebView for truest render. Both optional: functional QA needs only the Playwright MCP and runs in any terminal.
-
 ### Manual install (if you'd rather)
 
 ```bash
@@ -66,26 +87,31 @@ git clone https://github.com/unisol1020/claude-tools.git ~/.claude-tools
 ```
 Then restart Claude Code.
 
+## Requirements
+
+- [Claude Code](https://claude.com/claude-code), Node.js (for `npx`), git.
+- **Recommended runtime:** `cmux` (macOS) or the Claude Desktop app — both give a real browser/WebView, so the agent screenshots the live UI at truest fidelity (best for design checks). Both optional: functional QA needs only the Playwright MCP and runs in any terminal.
+- First Playwright run downloads Chromium once (~100MB), so the first `browser_navigate` is slow.
+
 ## Use it (in any project)
 
 1. Start the project's dev server (so there's a URL).
 2. Ask Claude Code, in plain words:
-   - *"QA the login flow"* · *"verify checkout works"* · *"check if the save button on /settings actually fires a request"* · *"test the dashboard on a mobile viewport"*
-3. **First run in that project**, the `qa-run` skill detects whether it's a single app or a **monorepo** (and which apps exist), then asks:
+   - *"QA the login flow"* · *"verify checkout works"* · *"check if the save button on /settings actually fires a request"* · *"test the dashboard on a mobile viewport"* · *"does the dashboard match this Figma: \<link\>"*
+3. **First run in that project**, the `qa-run` skill detects whether it's a single app or a **monorepo** (workspaces / `pnpm-workspace.yaml` / `turbo.json` / `nx.json` / multiple `apps/*`), then asks only for what isn't saved:
    - **Which app** is in scope (only if multiple and ambiguous).
-   - **What URL** to use for that app — pre-filled from the detected dev port. In a monorepo it remembers a URL **per app** (e.g. web-a :3000, web-b :3001, web-c :3002). localhost is the default; you *can* point it at a non-localhost URL (staging/preview/prod), but it'll warn you once that QA exercises a live environment **at your own risk** before using it.
-   - **Login credentials** for that app — *Provide* (local-dev only) or *Decline (never ask again)*. Remembered per app.
-   - **DB verification?** If a DB MCP (Supabase, Postgres, …) is connected, it offers to read via that. If none is connected, it asks whether to **install a DB MCP**, use **`psql` with a DB URL you provide**, or *Decline (never ask again)*. The URL should be a **local or dev** database — a prod URL is only used after you accept the risk, and queries stay read-only.
-4. It then runs `manual-qa`, which drives a headless browser and reports **PASS / FAIL / PARTIAL** with evidence.
-
-If a check needs login but you declined credentials, manual-qa stops at the wall and **pings you** (`BLOCKED_AT_LOGIN`) instead of guessing or faking a pass.
+   - **What URL** for that app — pre-filled from the detected dev port, remembered per app (e.g. web-a :3000, web-b :3001). localhost is the default; you can point it at staging/preview/prod, but it warns once that QA exercises a live environment **at your own risk**.
+   - **Login** for that app — *Provide* (local-dev only) or *Decline (never ask again)*.
+   - **DB verification?** If a DB MCP (Supabase, Postgres, …) is connected, it offers to read via that. Otherwise it asks whether to install a DB MCP, use **`psql`** with a read-only DB URL you provide, or *Decline (never ask again)*. Prefer a local/dev DB; a prod URL is allowed only after you accept the risk, and queries stay read-only.
+4. It invokes `manual-qa`, which drives the browser and reports **PASS / FAIL / PARTIAL** with evidence. If a check needs login but you declined, it pings you with `BLOCKED_AT_LOGIN` instead of guessing.
 
 ## Per-project memory
 
-Your choices are stored in `<project>/.claude/qa.local.json` (see `templates/qa.local.json.example`). URLs + credentials are **per app** (monorepo-friendly); the DB is project-level:
+Your choices live in `<project>/.claude/qa.local.json` (see `templates/qa.local.json.example`). URLs + credentials are **per app** (monorepo-friendly); the DB is project-level:
 
 ```jsonc
 {
+  "version": 1,
   "apps": [
     { "name": "web-a", "url": "http://localhost:3000",
       "credentials": { "status": "set", "loginUrl": "...", "username": "...", "password": "..." } },
@@ -95,23 +121,27 @@ Your choices are stored in `<project>/.claude/qa.local.json` (see `templates/qa.
 }
 ```
 
-`status` is the memory: `set` use it · `declined` never ask again · `no-mcp` no DB MCP present. Change your mind by editing (or deleting) the file.
+`status` is the memory: `set` = use it · `declined` = never ask again · `no-mcp` = no DB MCP present. Change your mind by editing (or deleting) the file.
 
 ### ⚠️ Credentials & privacy
 
-- `qa.local.json` holds **local-dev credentials** → it is **gitignored** and must **never** be committed. `qa-run` adds it to your project's `.gitignore` before writing anything.
-- **Local-dev by default; non-localhost is your call.** Prefer local-dev URLs and credentials. You *can* aim QA at a staging/preview/prod URL, but it's allowed only after a one-time warning that QA drives a live, possibly shared environment (forms submitted, writes triggered, real services hit) — **all risk is on you**. The agent never prints passwords in reports.
-- This repo itself contains **no secrets** — only the tooling and a placeholder template.
+- `qa.local.json` holds **local-dev credentials**, so it's **gitignored** and must never be committed. `qa-run` adds `/.claude/qa.local.json` to your project's `.gitignore` before writing anything.
+- **Local-dev by default; non-localhost is your call.** You can aim QA at staging/preview/prod, but only after a one-time warning that it drives a live, possibly shared environment (forms submitted, writes triggered, real services hit) — all risk on you. The agent never prints passwords in reports.
+- This repo contains **no secrets** — only the tooling and a placeholder template.
 
-## Tool split
+## How the capture tools split
 
-- **Playwright MCP** — functional QA: flows, forms, error states (network mocking), mobile/offline/geo, CI. The default.
-- **cmux** (macOS, optional) — design/visual confirmation in a real desktop WebView. Used only for "does it look right".
-- **Maestro** — native mobile-app flows (not part of this toolset; use it directly for RN/native).
+| Tool | Used for |
+|------|----------|
+| **Playwright MCP** | functional QA — flows, forms, forced error states (network mocking), mobile/offline/geo. The default; works everywhere. |
+| **cmux** (macOS, optional) | design/visual capture in a real desktop WebView, for "does it look right". |
+| **Maestro** | native mobile-app flows — not part of this toolset; use it directly. |
+
+For design mode, `manual-qa` captures the running UI with the first available of: cmux → Claude Desktop browser → Chrome-connected browser → headless Playwright screenshot → else it tells you to enable one.
 
 ## Override per project
 
-A project can ship its own `.claude/agents/manual-qa.md` to specialize the agent (project URLs, a DB cross-check tool, extra conventions). A project-scoped agent of the same name takes precedence over this global one — intended behavior.
+A project can ship its own `.claude/agents/manual-qa.md` to specialize the agent (project URLs, a DB cross-check tool, extra conventions). A project-scoped agent of the same name takes precedence over this global one — that's intended.
 
 ## Uninstall
 

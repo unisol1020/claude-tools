@@ -26,6 +26,21 @@ Discover what's connected **this session** (`claude mcp list` + this session's d
 
 Rule: **installed AND relevant only** — one real signal beats a dump, and connected-but-irrelevant or not-connected → skip silently and use the fallback. This list is examples, not a fixed set: if the user has another useful MCP connected, use it where it helps.
 
+## Keep a progress journal (so any agent has running context)
+After **every step**, append a 1–3 line note to the task's progress journal — what you just did, the resulting state, and the next action — so you, any subagent you spawn (devops, manual-qa), and a human peeking in always know what's going on and where the run is:
+```bash
+task-env log <task-id> "<PHASE> — what you just did; resulting state; next action"
+# e.g. task-env log eng-123 "PLAN — wrote detailed plan w/ Figma design refs; next: implement step 1 (checkout total)"
+```
+The journal lives at `$(task-env statedir)/<task-id>.progress.md` (per task, outside the repo — never committed). Read it back any time with `task-env progress <task-id>`; **when you spawn a subagent, give it the task id and tell it to run `task-env progress <task-id>` for context** (and to `task-env log` its own outcome). Log at least: investigation done, plan saved, each implement, each rule-check result, each QA verdict, ticket/PR opened, every comment addressed, and the final stop. Mirror the one-line headline to cmux too (`cmux set-status` / `cmux log`) for the live sidebar.
+
+## Guardrails — don't let an unattended loop run away or do something risky
+You're often one of up to 10 parallel, indefinitely-polling, unattended runs — so two backstops, both tracked in `<task-id>.state.json` and journaled:
+
+**Runaway / cost guard.** You can't meter tokens from inside the run, so cap *iterations*, not dollars. Soft defaults (override per run, e.g. `max-fixes=8`): **QA-fix rounds ≤ 5**, **comment-fix rounds per poll ≤ 5**, **total poll window ≤ 24h**. When a cap is hit without converging (QA still failing, a comment you can't resolve, the window elapses), **stop and ping the user** with a one-line status + `task-env progress <task-id>` — don't keep grinding. Count each round in `state.json`; reset the QA counter only when a genuinely new approach starts.
+
+**Risk guardrails (escalate, don't do unattended).** Before implementing — and before any comment-fix — check whether the change would touch a high-risk area: **DB migrations / destructive SQL, infra or IaC, auth / secrets / credentials, production config, mass deletes, or a major dependency bump** — plus anything the project's `CLAUDE.md` marks "do not touch". If so, **don't do it unattended**: pause, journal why, and ping the user for a decision (proceed only if the invocation explicitly authorized that area). The investigator already routes such tickets to "skip / do separately"; this is the loop's own backstop for when one slips through or a reviewer asks for it in a comment.
+
 ## Step 0 — Per-task isolation (worktree)
 Each task must not share state with the others.
 - **Task id** = the ticket key lowercased (`eng-123`), else a short slug of the description.
@@ -102,6 +117,8 @@ A support/research question that the investigator flagged as "answer without cod
 - **End to end, no hand-holding.** Once started, run to the stop condition. Only stop early for a true blocker (e.g. QA `BLOCKED_AT_LOGIN` with no saved creds, or a missing prerequisite) — then say exactly what's needed.
 - **Rule check is mandatory every iteration.** Every implement — initial or a fix — is followed by the CLAUDE.md check before QA. Never QA or push code that hasn't passed it.
 - **Plan once, then execute.** The detailed plan is built one time, before coding, and saved per task to `"$(task-env statedir)/<task-id>.plan.md"` — outside every worktree, never in the repo (so it can't leak into a commit/PR, and 10 tasks never share one file). Loop iterations (QA fixes, reviewer comments) execute that plan and update it only when the approach genuinely changes — they never re-plan from scratch.
+- **Journal every step.** After each phase, `task-env log <task-id> "…"` (1–3 lines: what, where, next). The per-task journal is the shared running context for every agent in the run — keep it current.
+- **Guardrails over grind.** Respect the runaway caps and the risk denylist (see Guardrails). When a cap is hit or a change is high-risk, pause and ping the user — never loop forever or touch something risky unattended.
 - **Design always travels with the plan.** If the ticket has any design — a Figma link or a screenshot/image — the plan's **Design** section must carry it, implementation builds to it, and QA checks against it. Never plan or build a UI task without its design in hand.
 - **QA never fakes a pass.** A clean QA traces to something manual-qa actually observed on the live, isolated env.
 - **Isolation is per task.** Your worktree + your Docker project only; never touch another task's branch, containers, or volumes.

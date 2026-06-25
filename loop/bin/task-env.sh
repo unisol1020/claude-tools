@@ -14,8 +14,10 @@
 #   task-env.sh up    <task-id> [worktree-dir]   # ensure the stack is up; print manifest JSON
 #   task-env.sh ports <task-id> [worktree-dir]   # print the saved manifest (URLs/ports) for a task
 #   task-env.sh down  <task-id> [worktree-dir]   # tear the task's stack down (containers + volumes)
-#   task-env.sh list                             # list loop task stacks and their ports
-#   task-env.sh statedir                         # print the per-task state dir (plans/manifests live here, NOT in any repo)
+#   task-env.sh list                             # list loop task stacks, their ports, and the latest progress line
+#   task-env.sh statedir                         # print the per-task state dir (plans/manifests/journals live here, NOT in any repo)
+#   task-env.sh log   <task-id> <text...>        # append a 1-3 line progress note to the task's journal
+#   task-env.sh progress <task-id>               # print the task's progress journal (running context for any agent)
 #   task-env.sh selfcheck                        # offline assertions (no docker needed)
 #
 # Env overrides: LOOP_COMPOSE_FILE (force a compose file), LOOP_ENV_DIR (manifest/registry dir).
@@ -130,14 +132,25 @@ cmd_down() {
 cmd_list() {
   need jq
   shopt -s nullglob
-  local any=0 m
+  local any=0 m t
   for m in "$ENV_DIR"/*.json; do
     [[ "$m" == *.compose.json ]] && continue
     any=1
+    t="$(jq -r .taskId "$m")"
     jq -r '"• \(.taskId)  [\(.status)]  \(.primaryUrl // "-")\n    " + ([.services|to_entries[]|"\(.key):\(.value.ports[0].host)"]|join("  "))' "$m"
+    [ -f "$ENV_DIR/$t.progress.md" ] && echo "    last: $(tail -n1 "$ENV_DIR/$t.progress.md")"
   done
   [ "$any" = 0 ] && echo "no loop task envs."
 }
+
+cmd_log() {  # <task> <text...> — append a timestamped progress line to the task journal
+  local task="$1"; shift
+  local f="$ENV_DIR/$task.progress.md"
+  [ -s "$f" ] || printf '# Loop progress — %s\n\n' "$task" > "$f"
+  printf -- '- [%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >> "$f"
+}
+
+cmd_progress() { local f="$ENV_DIR/$1.progress.md"; [ -f "$f" ] && cat "$f" || echo "no progress journal for '$1' yet."; }
 
 cmd_selfcheck() {
   need jq
@@ -157,6 +170,9 @@ JSON
   echo "$out" > "$tmp/gen.json"
   local u; u="$(LOOP_ENV_DIR="$tmp" bash -c "$(declare -f db_url_for); db_url_for '$tmp/gen.json' db 54999")"
   [ "$u" = "postgres://postgres:secret@localhost:54999/app" ] || die "selfcheck FAIL: db url = '$u'"
+  # 3. log appends to the task journal and progress reads it back
+  LOOP_ENV_DIR="$tmp/j" "$0" log demo "PLAN — built plan; next: implement" >/dev/null
+  LOOP_ENV_DIR="$tmp/j" "$0" progress demo | grep -q "PLAN — built plan" || die "selfcheck FAIL: progress journal not written/read"
   echo "task-env selfcheck: OK"
 }
 
@@ -168,6 +184,8 @@ case "${1:-}" in
   down)      shift; [ $# -ge 1 ] || die "usage: down <task-id> [worktree]"; cmd_down "$@" ;;
   list)      cmd_list ;;
   statedir)  cmd_statedir ;;
+  log)       shift; [ $# -ge 2 ] || die "usage: log <task-id> <text...>"; cmd_log "$@" ;;
+  progress)  shift; [ $# -ge 1 ] || die "usage: progress <task-id>"; cmd_progress "$@" ;;
   selfcheck) cmd_selfcheck ;;
-  *) die "usage: task-env.sh up|ports|down|list|statedir|selfcheck  (see header)";;
+  *) die "usage: task-env.sh up|ports|down|list|statedir|log|progress|selfcheck  (see header)";;
 esac

@@ -29,6 +29,9 @@ A **task id** (e.g. `eng-123`), the task's **worktree path**, and an action (`up
    ```
    State plainly: **the URL manual-qa should hit** (`primaryUrl`, or the `api` url for an API-only task) and the **DB url** for any DB cross-check. The manifest is also copied to `<worktree>/.claude/task-env.json`, so a human tester/dev can read the same ports with `task-env.sh ports <task-id>`.
 
+## Progress journal
+For context on where the run stands, read the task's journal: `task-env progress <task-id>`. Record your own outcome so the next agent sees it: `task-env log <task-id> "DEVOPS — env up: web <primaryUrl>, db <port>"` (or the failure + log tail if it didn't come up).
+
 ## down — tear down (when the task's loop is complete / PR approved)
 ```bash
 task-env.sh down <task-id> <worktree-path>

@@ -16,7 +16,7 @@ You (the **main thread**) turn "get N tickets from Linear and check them" into a
 For each ticket, spend real effort deciding which bucket it's in — look at the repo (CodeGraph if indexed, else search), the ticket's clarity, scope, and dependencies. Bucket it:
 
 1. **✅ Can run in the loop** — well-specified, scoped to this codebase, has (or implies) clear acceptance criteria, and is a change Claude Code can implement + QA + PR autonomously. Note the entry point (files/area) in one line.
-2. **⏭️ Better to skip / do separately** — too large or vague, needs a product/human decision, spans systems or external services, blocked, or risky to do unattended. Give the one-line reason.
+2. **⏭️ Better to skip / do separately** — too large or vague, needs a product/human decision, spans systems or external services, blocked, or **high-risk to run unattended** (DB migrations, infra/IaC, auth/secrets, prod config, mass deletes, major dependency bumps, or anything `CLAUDE.md` marks do-not-touch). Give the one-line reason.
 3. **❓ Investigation only (no coding)** — really a question/research/support ask. The loop can *answer* it (investigate + post findings to the ticket) without writing code.
 
 Lean on any **connected MCP** that sharpens the call (installed + relevant only, never invent): **Sentry** for whether a bug is real/severe and where it fires, **GitHub** for recent changes in the area, **Figma** for whether a design actually exists (a feature with no design often belongs in "skip / do separately"), the **DB MCP** (Supabase/Postgres) for data questions that are really investigation-only, **Slack/Notion** for the thread behind a vague ticket. Discover what's connected this session and use it where it helps.
