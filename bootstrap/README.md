@@ -21,11 +21,11 @@ flowchart TD
   I -- yes --> J[Offer per-commit auto-sync hook]
   I -- no --> K[Offer /learn-codebase<br>claude-mem priming, ask first]
   J --> K
-  K --> L[Augment CLAUDE.md]
+  K --> L[Augment CLAUDE.md<br>+ write Code Comments policy]
   L --> M[Append repo to .bootstrapped-projects<br>nudge stops]
 ```
 
-Walkthrough: `setup-env.sh` checks each tool with `command -v` and installs the gaps — `brew install ripgrep`, `codegraph` via volta/npm then `codegraph install -y` to wire its MCP, `graphifyy` via uv/pipx then `graphify install` for the skill, and the ponytail + claude-mem plugins written into `~/.claude/settings.json`. Then `/bootstrap` builds the CodeGraph index (asking first on a large repo), optionally builds the graphify graph, and — only if a graph got built — offers a per-commit hook that refreshes it on every `git commit`. It augments the repo's `CLAUDE.md`, then appends the repo path to `~/.claude/.bootstrapped-projects` so the session-start nudge stops firing for it.
+Walkthrough: `setup-env.sh` checks each tool with `command -v` and installs the gaps — `brew install ripgrep`, `codegraph` via volta/npm then `codegraph install -y` to wire its MCP, `graphifyy` via uv/pipx then `graphify install` for the skill, and the ponytail + claude-mem plugins written into `~/.claude/settings.json`. Then `/bootstrap` builds the CodeGraph index (asking first on a large repo), optionally builds the graphify graph, and — only if a graph got built — offers a per-commit hook that refreshes it on every `git commit`. It augments the repo's `CLAUDE.md` and, by default, writes the standard `## Code Comments` policy (no comments by default; one-line `why` only) verbatim into `CLAUDE.md` plus any existing `AGENTS.md` / `AGENT.md` (root and nested), then appends the repo path to `~/.claude/.bootstrapped-projects` so the session-start nudge stops firing for it.
 
 Plugins and the CodeGraph MCP only surface after a Claude Code restart — `/bootstrap` says so at the end.
 
@@ -36,6 +36,7 @@ Plugins and the CodeGraph MCP only surface after a Claude Code restart — `/boo
 | `skills/bootstrap/SKILL.md` | the `/bootstrap` flow Claude runs per repo |
 | `skills/bootstrap/setup-env.sh` | idempotent installer for the toolchain — also runnable standalone from a terminal |
 | `skills/bootstrap/install-graphify-sync.sh` | wires the per-commit graphify auto-sync hook into a repo's `.claude/` |
+| `skills/bootstrap/code-comments.md` | the canonical `## Code Comments` policy block written verbatim into `CLAUDE.md` / `AGENTS.md` / `AGENT.md` |
 | `skills/bootstrap/templates/` | the `graphify-sync.sh` / `graphify-sync.py` files that hook copies into a repo |
 | `hooks/bootstrap-check.sh` | SessionStart nudge — fires in any project not yet in `.bootstrapped-projects` |
 | `install.sh` | symlinks the skill + nudge hook, wires the SessionStart hooks into `settings.json` |

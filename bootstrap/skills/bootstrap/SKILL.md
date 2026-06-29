@@ -14,6 +14,7 @@ Run this to take a repo (and a fresh machine) from nothing to fully set up for t
 - **graphify** — the `graphifyy` PyPI package (provides the `graphify` CLI; Python 3.10+, installed via uv/pipx) + the `/graphify` skill, plus an optional **per-commit auto-sync** that keeps the graph fresh with zero tokens.
 - **ponytail** — the ponytail Claude Code plugin (lazy-senior-dev mode: YAGNI, stdlib-first, fewest lines).
 - **claude-mem** — the [claude-mem](https://github.com/thedotmack/claude-mem) Claude Code plugin (persistent cross-session memory; ships the `/learn-codebase` priming skill).
+- **Standard code-comment policy** — writes the required `## Code Comments` rules (no comments by default; one-line `why` only) into the repo's `CLAUDE.md` and any existing `AGENTS.md` / `AGENT.md`, so every project enforces the same standard.
 
 Only what's missing is installed; re-running is safe.
 
@@ -41,11 +42,13 @@ Only what's missing is installed; re-running is safe.
 
 6. **Prime claude-mem's memory (optional, heavy).** Offer to run `/learn-codebase` — claude-mem's priming skill reads every source file in full to front-load a cross-session memory cache. It costs tokens (proportional to repo size). **Ask before running**; run on confirm, skip otherwise. Needs a **Claude Code restart** first so the plugin's skill is loaded — if you bootstrapped in the same session, tell the user to restart then run `/learn-codebase` themselves.
 
-7. **Augment CLAUDE.md.** Create or update `$root/CLAUDE.md` with a short note that CodeGraph is indexed and should be reached for before grep/find on code questions (mirror the user's global convention), plus the detected stack. Don't duplicate a note that's already there.
+7. **Augment CLAUDE.md + enforce the comment policy.** Two parts, both non-destructive (back up each file before editing):
+   - **a. Stack note.** Create or update `$root/CLAUDE.md` with a short note that CodeGraph is indexed and should be reached for before grep/find on code questions (mirror the user's global convention), plus the detected stack. Don't duplicate a note that's already there.
+   - **b. Standard Code Comments policy (always, by default).** Insert the canonical block from `~/.claude/skills/bootstrap/code-comments.md` **verbatim** into the repo's agent-instruction files. Targets: `$root/CLAUDE.md` (create it if missing) **and every existing** `CLAUDE.md` / `AGENTS.md` / `AGENT.md` already in the repo — root and nested (so a monorepo's per-app files get it too). Don't create new `AGENTS.md`/`AGENT.md` where none exists; only update the ones that are there. For each target: if it already has a `## Code Comments` section, **replace that whole section** with the canonical block (keeps the standard current as it evolves); otherwise **append** the block. Insert it exactly as written — it's a fixed standard, never paraphrase or adapt it per repo.
 
 8. **Record completion.** Append `root` as a new line to `~/.claude/.bootstrapped-projects` (create the file if missing; no duplicates). This stops the session-start nudge for this repo.
 
-9. **Report.** What was installed, whether the index built, whether graphify ran, whether the per-commit auto-sync was enabled, whether claude-mem was primed, and: **restart Claude Code once** so the ponytail + claude-mem plugins + CodeGraph MCP load.
+9. **Report.** What was installed, whether the index built, whether graphify ran, whether the per-commit auto-sync was enabled, whether claude-mem was primed, which files got the Code Comments policy (created vs updated), and: **restart Claude Code once** so the ponytail + claude-mem plugins + CodeGraph MCP load.
 
 ## Rules
 
