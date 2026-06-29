@@ -42,7 +42,7 @@ Discover what's connected **this session** (`claude mcp list` + this session's d
    - **Unread digest** — for the watched channels, a compact summary of unread: who needs what, decisions made, threads worth opening. Don't transcribe — summarize.
    - Sort the same way as tickets (most-urgent / needs-a-reply-from-me first), each as one line: who · channel/DM · the ask · link.
 
-5. **Assemble the briefing.** One scannable digest, three sections, urgent-first within each. Keep it tight — this is a glance-and-go, not a report. End with a short **"do first"** suggestion (the 1–3 highest-leverage items across all three) and the open offers (post the PR comments? run a ticket in the loop?). If a section's MCP wasn't connected, show the section header with a one-line "not connected — skipped" so the user knows it wasn't forgotten.
+5. **Assemble the briefing, then humanize.** One scannable digest, three sections, urgent-first within each. Keep it tight — this is a glance-and-go, not a report. End with a short **"do first"** suggestion (the 1–3 highest-leverage items across all three) and the open offers (post the PR comments? run a ticket in the loop?). If a section's MCP wasn't connected, show the section header with a one-line "not connected — skipped" so the user knows it wasn't forgotten. **Run the assembled prose** (the section summaries and the Slack/ticket one-liners — not the chips, links, or ids) **through the `humanizer` skill** so it reads like notes you'd jot for yourself, not an AI digest. (PR comments are already humanized inside review-prs.)
 
 ```
 ☀️  Morning — Mon Jun 29
@@ -83,5 +83,6 @@ Rank so the user sees the shape of the day, not just a flat list:
 - **Ask once, remember forever.** Repos, channels, and the post mode are gathered on first run and saved; `declined` is permanent. The user edits `~/.claude/morning.local.json` to change them.
 - **Degrade, don't fail.** No tracker MCP → skip Section B with a note. No Slack MCP → skip Section C with a note. No repos configured → use the current repo. One missing piece never kills the briefing.
 - **Compact over complete.** Summarize Slack and ticket descriptions to one line each; the user opens the link for detail. A morning briefing that takes five minutes to read defeats the purpose.
+- **Humanize the prose.** The assembled briefing runs through the `humanizer` skill (step 5) so it reads human, not AI-generated — prose only; ids, links, and chips stay verbatim. PR comments are humanized within review-prs.
 - **Nothing silently dropped.** If you cap PRs reviewed or unread channels summarized, say how many you covered and what's left.
 - **Reuse the pieces.** PR review = `review-prs`; running a ticket = `investigator` / `loop-engine`; tracker mapping = the `ticket` skill's config. You orchestrate and sort; you don't reimplement any of them.

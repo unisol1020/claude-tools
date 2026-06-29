@@ -25,7 +25,7 @@ flowchart TD
     RPX["/review-prs (standalone)"] --> RP
 ```
 
-`review-prs` reuses your existing `frontend-reviewer` / `backend-reviewer` / `security-reviewer` agents (and the `code-review` skill) as the quality engine where they're installed, and adds the two things they don't do: the **CLAUDE.md-rule** pass scoped to each changed file's rule ancestry, and the **ticket-intent** cross-check. `morning` reuses `review-prs` for PRs, the `ticket` skill's saved tracker mapping for tickets, and can hand a chosen ticket to the **investigator** / `loop-engine` to actually run.
+`review-prs` reuses your existing `frontend-reviewer` / `backend-reviewer` / `security-reviewer` agents (and the `code-review` skill) as the quality engine where they're installed, and adds the two things they don't do: the **CLAUDE.md-rule** pass scoped to each changed file's rule ancestry, and the **ticket-intent** cross-check. `morning` reuses `review-prs` for PRs, the `ticket` skill's saved tracker mapping for tickets, and can hand a chosen ticket to the **investigator** / `loop-engine` to actually run. Both run their final text through the **`humanizer`** skill before it's shown or posted, so PR comments and the briefing read like a person wrote them — prose only; `file:line`, ids, and links stay verbatim.
 
 ## What you get
 
@@ -77,7 +77,7 @@ Then restart Claude Code.
 
 ## Requirements
 
-[Claude Code](https://claude.com/claude-code), `git`, and an authenticated **`gh` CLI** (for PR review). For the full morning briefing also connect a **Linear** or **Atlassian (Jira)** MCP (the "my tickets" section) and a **Slack** MCP (the Slack section) — each section degrades to a one-line "not connected" note if its MCP is absent, so the rest of the briefing still runs.
+[Claude Code](https://claude.com/claude-code), `git`, and an authenticated **`gh` CLI** (for PR review). For the full morning briefing also connect a **Linear** or **Atlassian (Jira)** MCP (the "my tickets" section) and a **Slack** MCP (the Slack section) — each section degrades to a one-line "not connected" note if its MCP is absent, so the rest of the briefing still runs. The **`humanizer`** skill is used for the final human-readability pass on comments and the briefing; if it isn't installed, both skills fall back to their built-in anti-slop rules.
 
 ## Use it
 
