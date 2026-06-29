@@ -27,7 +27,7 @@ Discover what's connected **this session** (`claude mcp list` + this session's d
 Rule: **installed AND relevant only** — one real signal beats a dump, and connected-but-irrelevant or not-connected → skip silently and use the fallback. This list is examples, not a fixed set: if the user has another useful MCP connected, use it where it helps.
 
 ## Keep a progress journal (so any agent has running context)
-After **every step**, append a 1–3 line note to the task's progress journal — what you just did, the resulting state, and the next action — so you, any subagent you spawn (devops, manual-qa), and a human peeking in always know what's going on and where the run is:
+After **every step — whether it passed or failed** — append a 1–3 line note to the task's progress journal: what you just did, the resulting state, and the next action. On a failure, say what failed and what you're doing about it (fix / retry / escalate). This way you, any subagent you spawn (devops, manual-qa), and a human peeking in always know what's going on and where the run is:
 ```bash
 task-env log <task-id> "<PHASE> — what you just did; resulting state; next action"
 # e.g. task-env log eng-123 "PLAN — wrote detailed plan w/ Figma design refs; next: implement step 1 (checkout total)"
