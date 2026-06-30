@@ -2,7 +2,7 @@
 
 Two Claude Code skills for the start of the day:
 
-- **`morning`** — one command (*"do my morning routine"* / `/morning`) that pulls the three things you wake up to and triages each: the **PRs** in your repos that aren't yours to review, the **tickets** assigned to you (sorted urgency-then-effort so urgent items and quick wins surface first, grouped by project), and **Slack** (mentions, DMs, urgent threads, a compact unread digest). One scannable briefing, urgent-first, with a "do first" line at the bottom.
+- **`morning`** — one command (*"do my morning routine"* / `/morning`) that pulls the three things you wake up to and triages each: the **PRs** in your repos that aren't yours and you haven't approved yet, the **tickets** assigned to you (sorted urgency-then-effort so urgent items and quick wins surface first, grouped by project), and **Slack** (mentions, DMs, urgent threads, a compact unread digest). One scannable briefing, urgent-first, with a "do first" line at the bottom.
 - **`review-prs`** — a standalone reviewer (*"review all PRs"* / *"review this PR: <url>"* / `/review-prs`) that checks a PR against the project's own **`CLAUDE.md`** (root **and** the per-app/nested ones that govern the changed files), against what its **linked ticket** asked for, and for plain **logic and quality** bugs — then leaves short, human review comments. The morning routine uses it for its PR section.
 
 ## How it works

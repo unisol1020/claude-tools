@@ -1,6 +1,6 @@
 ---
 name: morning
-description: Your morning briefing in one command. Pulls the three things you wake up to and triages each into a scannable digest — (1) open GitHub PRs in your repos that aren't yours, reviewed against each project's CLAUDE.md + logic + quality via the review-prs skill; (2) your Linear/Jira tickets assigned to you, sorted by a real urgency-then-effort order (so urgent items and quick wins surface first) and grouped by project, each with a one-line what-it-is and a how-big-and-hard chip; (3) Slack — every mention of you, DM, and urgent thread, plus a compact summary of unread, sorted the same way. Gathers your repos + watched Slack channels once and remembers them per machine; degrades gracefully when a tracker or Slack MCP isn't connected. Use when the user says "morning routine", "do my morning", "morning briefing", "what's on my plate", or invokes /morning. Runs in the MAIN thread so it can ask once and confirm before any PR comment is posted.
+description: Your morning briefing in one command. Pulls the three things you wake up to and triages each into a scannable digest — (1) open GitHub PRs in your repos that aren't yours and you haven't approved yet, reviewed against each project's CLAUDE.md + logic + quality via the review-prs skill; (2) your Linear/Jira tickets assigned to you, sorted by a real urgency-then-effort order (so urgent items and quick wins surface first) and grouped by project, each with a one-line what-it-is and a how-big-and-hard chip; (3) Slack — every mention of you, DM, and urgent thread, plus a compact summary of unread, sorted the same way. Gathers your repos + watched Slack channels once and remembers them per machine; degrades gracefully when a tracker or Slack MCP isn't connected. Use when the user says "morning routine", "do my morning", "morning briefing", "what's on my plate", or invokes /morning. Runs in the MAIN thread so it can ask once and confirm before any PR comment is posted.
 ---
 
 # morning — the morning conductor
@@ -14,7 +14,7 @@ State lives in `~/.claude/morning.local.json` (machine-level, since "my repos" a
 {
   "version": 1,
   "github":  { "repos": ["org/web", "org/api"] },   // repos to scan for PRs; [] or "current" = the repo you're in
-  "prFilter": "is:open -author:@me",                  // which PRs are "mine to review"; gh search syntax
+  "prFilter": "is:open -author:@me",                  // which PRs are "mine to review"; gh search syntax. PRs you've already approved are dropped on top of this (step 2) — search can't express "not approved by me"
   "slack":   { "status": "set|declined", "channels": ["#eng", "#bugs"], "handle": "@max", "userId": "U…" },
   "review":  { "postMode": "confirm" }                // confirm (default) | auto — passed through to review-prs
 }
@@ -32,7 +32,7 @@ Discover what's connected **this session** (`claude mcp list` + this session's d
 
 1. **Resolve config + identity.** Read `~/.claude/morning.local.json`. Fill gaps once (AskUserQuestion): which **repos** to scan (offer the current repo + any you can infer), which **Slack channels** matter (or "just mentions + DMs"). Resolve "me": GitHub `gh api user --jq .login`; Linear current user (`get_user` "me"); Slack handle via `slack_search_users` on the user's name/email (`max.levchuk@fiveirongolf.com`) — cache the ids. Save.
 
-2. **Section A — PRs to review.** For each configured repo, `gh pr list --repo <r> --state open --search "<prFilter>" --json number,title,author,url`. These are the PRs that are *yours to review* (default: open, not authored by you). For each, run the **review-prs** skill to analyze the PR — it scopes the CLAUDE.md rules to the changed paths, cross-checks the linked ticket, and finds logic/quality issues, reusing the reviewer agents. Its confirm gate already holds every comment, so **nothing is posted from the briefing** — surface a one-line verdict per PR (looks good / N blocking / nits) with the top issue, then list the PRs that have findings and offer "post the review comments?" rather than posting silently. Many PRs → review the highest-traffic / oldest-waiting first and say how many you covered.
+2. **Section A — PRs to review.** For each configured repo, `gh pr list --repo <r> --state open --search "<prFilter>" --json number,title,author,url,latestReviews`, then **drop any PR you've already approved** — GitHub search has no `approved-by` qualifier, so cut them client-side: `--jq '[.[] | select((.latestReviews // []) | any(.author.login == "<me>" and .state == "APPROVED") | not)]'`. These are the PRs still *awaiting your review* (default: open, not authored by you, not yet approved by you). A PR you approved and that was then pushed to still reads as approved here and stays dropped until you re-review — that's intended for a morning glance. For each, run the **review-prs** skill to analyze the PR — it scopes the CLAUDE.md rules to the changed paths, cross-checks the linked ticket, and finds logic/quality issues, reusing the reviewer agents. Its confirm gate already holds every comment, so **nothing is posted from the briefing** — surface a one-line verdict per PR (looks good / N blocking / nits) with the top issue, then list the PRs that have findings and offer "post the review comments?" rather than posting silently. Many PRs → review the highest-traffic / oldest-waiting first and say how many you covered.
 
 3. **Section B — My tickets, logically sorted.** Pull issues **assigned to me** in an actionable state (Todo / In Progress / current cycle or sprint; skip Done/Canceled) via the tracker. For each, capture: project, priority, estimate/points if set, due date, and a **one-line plain-English "what it is"** (from the title + first lines of the description — not a paste). Then **sort and group** (see the sort model below) and present as a grouped checklist with dimension chips so the user can see urgency, effort, and size at a glance. Offer to hand any picked ticket to the **investigator** / `loop-engine` to actually run — don't start anything unprompted.
 
@@ -47,7 +47,7 @@ Discover what's connected **this session** (`claude mcp list` + this session's d
 ```
 ☀️  Morning — Mon Jun 29
 
-PRs TO REVIEW (3 open, not yours)
+PRs TO REVIEW (3 awaiting your review)
   #214  Fix coupon over-charge        alice   → 1 blocker (orders.ts:88), matches ENG-123
   #209  Admin table redesign          bob     → 2 nits, clean otherwise
   #201  Bump deps                     carol   → looks good
